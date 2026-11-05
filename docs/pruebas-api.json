@@ -1,0 +1,301 @@
+{
+  "client": "Thunder Client / Postman Export",
+  "collectionName": "NexoEventos API - Pruebas Oficiales Día 2",
+  "dateExported": "2026-11-05T15:30:00.000Z",
+  "version": "1.1",
+  "variables": [
+    { "name": "baseUrl", "value": "http://localhost:5000/api" },
+    { "name": "adminToken", "value": "" },
+    { "name": "supervisorToken", "value": "" },
+    { "name": "clienteToken", "value": "" }
+  ],
+  "requests": [
+    {
+      "name": "01. Auth - Health Check",
+      "method": "GET",
+      "url": "{{baseUrl}}/health",
+      "expectedStatus": 200,
+      "description": "Verifica que el servicio esté online y conectado a MySQL"
+    },
+    {
+      "name": "02. Auth - Intento de acceso sin token (401)",
+      "method": "GET",
+      "url": "{{baseUrl}}/servicios",
+      "expectedStatus": 401,
+      "description": "Verifica que las rutas protegidas rechacen peticiones sin cabecera Authorization"
+    },
+    {
+      "name": "03. Auth - Registro con contraseña corta (400)",
+      "method": "POST",
+      "url": "{{baseUrl}}/auth/register",
+      "body": {
+        "nombre": "Usuario Invalido",
+        "correo": "invalido@test.com",
+        "password": "123"
+      },
+      "expectedStatus": 400,
+      "description": "Rechaza contraseñas menores a 8 caracteres"
+    },
+    {
+      "name": "04. Auth - Registro Exitoso Cliente (201)",
+      "method": "POST",
+      "url": "{{baseUrl}}/auth/register",
+      "body": {
+        "nombre": "Eventos y Diseños Aurora S.A.S.",
+        "correo": "contacto@auroraeventos.com",
+        "password": "Password123*",
+        "tipo_cliente": "empresa",
+        "telefono": "+57 3112223344",
+        "direccion": "Carrera 15 # 85-10, Bogotá"
+      },
+      "expectedStatus": 201,
+      "description": "Crea el perfil en clientes y el usuario con rol 'cliente'"
+    },
+    {
+      "name": "05. Auth - Registro con Correo Duplicado (400)",
+      "method": "POST",
+      "url": "{{baseUrl}}/auth/register",
+      "body": {
+        "nombre": "Duplicado",
+        "correo": "admin@nexoeventos.com",
+        "password": "Password123*"
+      },
+      "expectedStatus": 400,
+      "description": "Rechaza correos electrónicos ya existentes en el sistema"
+    },
+    {
+      "name": "06. Auth - Login Incorrecto (401)",
+      "method": "POST",
+      "url": "{{baseUrl}}/auth/login",
+      "body": {
+        "correo": "admin@nexoeventos.com",
+        "password": "PasswordErronea!"
+      },
+      "expectedStatus": 401,
+      "description": "Retorna 401 por credenciales incorrectas"
+    },
+    {
+      "name": "07. Auth - Login Administrador (200)",
+      "method": "POST",
+      "url": "{{baseUrl}}/auth/login",
+      "body": {
+        "correo": "admin@nexoeventos.com",
+        "password": "Admin1234*"
+      },
+      "expectedStatus": 200,
+      "description": "Retorna JWT y objeto de usuario seguro"
+    },
+    {
+      "name": "08. Auth - Login Supervisor (200)",
+      "method": "POST",
+      "url": "{{baseUrl}}/auth/login",
+      "body": {
+        "correo": "supervisor@nexoeventos.com",
+        "password": "Supervisor1234*"
+      },
+      "expectedStatus": 200,
+      "description": "Retorna JWT para rol supervisor"
+    },
+    {
+      "name": "09. Auth - Login Cliente (200)",
+      "method": "POST",
+      "url": "{{baseUrl}}/auth/login",
+      "body": {
+        "correo": "cliente@empresa.com",
+        "password": "Cliente1234*"
+      },
+      "expectedStatus": 200,
+      "description": "Retorna JWT para rol cliente con id_cliente vinculado"
+    },
+    {
+      "name": "10. Auth - Perfil Actual (/api/auth/me) (200)",
+      "method": "GET",
+      "url": "{{baseUrl}}/auth/me",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 200,
+      "description": "Retorna los datos del usuario autenticado sin campos sensibles"
+    },
+    {
+      "name": "11. RBAC - Cliente intenta acceder a /roles (403)",
+      "method": "GET",
+      "url": "{{baseUrl}}/roles",
+      "headers": {
+        "Authorization": "Bearer {{clienteToken}}"
+      },
+      "expectedStatus": 403,
+      "description": "Bloquea accesos no permitidos al catálogo de roles"
+    },
+    {
+      "name": "12. RBAC - Supervisor intenta crear usuario (403)",
+      "method": "POST",
+      "url": "{{baseUrl}}/usuarios",
+      "headers": {
+        "Authorization": "Bearer {{supervisorToken}}"
+      },
+      "body": {
+        "nombre": "Supervisor Falso",
+        "correo": "falso@empresa.com",
+        "password": "Password123*",
+        "id_rol": 1
+      },
+      "expectedStatus": 403,
+      "description": "Bloquea creación de usuarios por parte de supervisores"
+    },
+    {
+      "name": "13. Roles - Listar Roles (200)",
+      "method": "GET",
+      "url": "{{baseUrl}}/roles",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 200
+    },
+    {
+      "name": "14. Roles - Intentar eliminar rol estructural (409)",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/roles/1",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 409,
+      "description": "Protege los tres roles base del sistema contra eliminación"
+    },
+    {
+      "name": "15. Clientes - Listar Clientes (200)",
+      "method": "GET",
+      "url": "{{baseUrl}}/clientes",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 200
+    },
+    {
+      "name": "16. Clientes - Crear Cliente (201)",
+      "method": "POST",
+      "url": "{{baseUrl}}/clientes",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "tipo_cliente": "persona",
+        "nombre": "Gabriel Salazar",
+        "correo": "gabriel.salazar@email.com",
+        "telefono": "+57 3154445566",
+        "direccion": "Calle 72 # 11-40"
+      },
+      "expectedStatus": 201
+    },
+    {
+      "name": "17. Clientes - Intentar eliminar cliente con eventos (409)",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/clientes/1",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 409,
+      "description": "Protege la integridad referencial impidiendo registros huérfanos"
+    },
+    {
+      "name": "18. Servicios - Listar Servicios (200)",
+      "method": "GET",
+      "url": "{{baseUrl}}/servicios",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 200
+    },
+    {
+      "name": "19. Servicios - Crear Servicio (201)",
+      "method": "POST",
+      "url": "{{baseUrl}}/servicios",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "nombre": "Barra Móvil de Coctelería de Autor",
+        "descripcion": "Bartenders certificados y cristalería premium",
+        "precio": 900.00,
+        "estado": "activo"
+      },
+      "expectedStatus": 201
+    },
+    {
+      "name": "20. Eventos - Crear Evento con Cliente Inexistente (404)",
+      "method": "POST",
+      "url": "{{baseUrl}}/eventos",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "id_cliente": 999999,
+        "nombre": "Evento Fantasma",
+        "tipo_evento": "Gala",
+        "fecha_evento": "2026-12-31",
+        "ubicacion": "Hotel W"
+      },
+      "expectedStatus": 404,
+      "description": "Verifica la existencia del registro relacionado antes de insertar"
+    },
+    {
+      "name": "21. Eventos - Crear Evento Válido (201)",
+      "method": "POST",
+      "url": "{{baseUrl}}/eventos",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "id_cliente": 1,
+        "nombre": "Cena de Fin de Año Corporativa",
+        "tipo_evento": "Corporativo",
+        "fecha_evento": "2026-12-18",
+        "ubicacion": "Club Campestre La Sabana",
+        "estado": "pendiente"
+      },
+      "expectedStatus": 201
+    },
+    {
+      "name": "22. Detalle Eventos - Asociar Servicio a Evento (201)",
+      "method": "POST",
+      "url": "{{baseUrl}}/detalle-eventos",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "id_evento": 1,
+        "id_servicio": 2,
+        "cantidad": 3,
+        "precio_unitario": 1750.00
+      },
+      "expectedStatus": 201,
+      "description": "Congela el precio unitario pactado"
+    },
+    {
+      "name": "23. Usuarios - Crear Usuario Administrativo (201)",
+      "method": "POST",
+      "url": "{{baseUrl}}/usuarios",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "nombre": "Coordinador de Bodas",
+        "correo": "coordinador.bodas@nexoeventos.com",
+        "password": "PasswordSeguro2026*",
+        "id_rol": 2
+      },
+      "expectedStatus": 201
+    },
+    {
+      "name": "24. Usuarios - Bloquear eliminación del único admin (409)",
+      "method": "DELETE",
+      "url": "{{baseUrl}}/usuarios/1",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 409,
+      "description": "Regla de seguridad: evita que el sistema quede sin administradores"
+    }
+  ]
+}
+
