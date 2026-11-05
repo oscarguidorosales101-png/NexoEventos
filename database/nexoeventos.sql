@@ -145,6 +145,11 @@ CREATE TABLE `agendas` (
   CONSTRAINT `fk_agendas_responsable` FOREIGN KEY (`id_responsable`) REFERENCES `usuarios` (`id_usuario`) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Índice funcional único: Garantiza una sola agenda principal (id_categoria = 1) por evento comercial
+CREATE UNIQUE INDEX `uq_evento_agenda_principal` ON `agendas` (
+  (CASE WHEN `id_categoria` = 1 AND `id_evento` IS NOT NULL THEN `id_evento` ELSE NULL END)
+);
+
 -- -----------------------------------------------------------------------------
 -- 9. TABLA: agenda_integrantes (Extensión Calendario)
 -- -----------------------------------------------------------------------------
@@ -278,3 +283,20 @@ INSERT INTO `agenda_notas` (`id_nota`, `id_agenda`, `id_usuario`, `descripcion`,
   (5, 5, 1, 'Coordinar la llegada de los floristas para armado de arco nupcial a las 13:00.', FALSE, '2026-11-07 13:00:00'),
   (6, 5, 2, 'Comprobar microfonía inalámbrica de votos matrimoniales.', FALSE, '2026-11-07 15:30:00')
 ON DUPLICATE KEY UPDATE `descripcion` = VALUES(`descripcion`);
+
+-- Registro de migraciones ejecutadas
+INSERT INTO `schema_migrations` (`id`, `migration_name`) VALUES
+  (1, '001_create_roles.sql'),
+  (2, '002_create_clientes.sql'),
+  (3, '003_create_servicios.sql'),
+  (4, '004_create_eventos.sql'),
+  (5, '005_create_detalle_eventos.sql'),
+  (6, '006_create_usuarios.sql'),
+  (7, '007_seed_roles.sql'),
+  (8, '008_seed_initial_data.sql'),
+  (9, '009_create_calendar_tables.sql'),
+  (10, '010_seed_calendar_categories.sql'),
+  (11, '011_seed_initial_schedules.sql'),
+  (12, '012_prevent_duplicate_event_schedules.sql')
+ON DUPLICATE KEY UPDATE `migration_name` = VALUES(`migration_name`);
+

@@ -53,7 +53,7 @@ El sistema integra dos núcleos principales:
 ```text
 NexoEventos/
 ├── backend/
-│   ├── migrations/                  # 11 Migraciones SQL ordenadas e idempotentes
+│   ├── migrations/                  # 12 Migraciones SQL ordenadas e idempotentes
 │   │   ├── 001_create_roles.sql
 │   │   ├── 002_create_clientes.sql
 │   │   ├── 003_create_servicios.sql
@@ -64,7 +64,8 @@ NexoEventos/
 │   │   ├── 008_seed_initial_data.sql
 │   │   ├── 009_create_calendar_tables.sql
 │   │   ├── 010_seed_calendar_categories.sql
-│   │   └── 011_seed_initial_schedules.sql
+│   │   ├── 011_seed_initial_schedules.sql
+│   │   └── 012_prevent_duplicate_event_schedules.sql
 │   ├── src/
 │   │   ├── config/                  # Conexión al pool MySQL (db.js)
 │   │   ├── controllers/             # Controladores REST de todas las entidades
@@ -238,16 +239,16 @@ Abra su navegador en: `http://localhost:5173`
 
 ---
 
-## 10. Suite de Pruebas Automatizadas (69/69 Aprobadas)
+## 10. Batería Integral de Pruebas Automatizadas
 
-Con el backend en ejecución, ejecute la suite de verificación exhaustiva:
+El sistema cuenta con cuatro suites de pruebas automatizadas y reproducibles:
 
+### 10.1 Suite de Endpoints REST, RBAC y Concurrencia (83/83 Aprobadas)
 ```powershell
 cd NexoEventos/backend
 npm run test:api
 ```
-
-La suite valida automáticamente 69 escenarios en tiempo real:
+Valida 15 secciones que cubren 83 pruebas exhaustivas (100% PASS):
 - Health check y conexión a MySQL 8.0.
 - Rutas públicas vs privadas sin token (HTTP 401).
 - Cifrado seguro bcrypt y firmas JWT.
@@ -263,13 +264,44 @@ La suite valida automáticamente 69 escenarios en tiempo real:
 - Asignación y desasignación de personal operativo.
 - Generación y exportación de archivos válidos **RFC 5545 iCalendar (.ics)**.
 - Aislamiento estricto de privacidad para cuentas con rol cliente.
+- Integridad comercial: Una sola agenda principal por evento (Migración 012).
+- Simulación de concurrencia y deadlocks resueltos con HTTP 409 Conflict.
+- Handshake y sincronización en tiempo real vía Socket.IO.
+
+### 10.2 Suite de Persistencia Real en MySQL 8.0 (10 Entidades)
+```powershell
+cd NexoEventos/backend
+npm run test:persistence
+```
+Comprueba directamente contra MySQL la persistencia, integridad referencial y eliminación de las 10 entidades: `roles`, `usuarios`, `clientes`, `servicios`, `eventos`, `detalle_eventos`, `categorias_agenda`, `agendas`, `agenda_integrantes` y `agenda_notas`.
+
+### 10.3 Flujo Comercial Completo: Evento -> Agenda
+```powershell
+cd NexoEventos/backend
+npm run test:commercial
+```
+Comprueba el ciclo de vida de un evento comercial desde su solicitud, aprobación por supervisor, calendarización principal, asignación de equipo y verificación en MySQL.
+
+### 10.4 Pruebas de Interfaz E2E con Navegador Real (Puppeteer)
+```powershell
+cd NexoEventos/frontend
+npm run test:e2e
+```
+Ejecuta Chromium headless interactuando con los 3 roles en el frontend en vivo (`http://localhost:5173`):
+- Login Administrador, renderizado de Dashboard, 0 pantallas negras, 0 excepciones JS.
+- Creación, edición y eliminación de eventos mediante modales y tabla interactiva.
+- Carga de vistas de calendario semanal, mensual y diaria.
+- Cierre de sesión y login como Supervisor; verificación de aislamiento de rutas administrativas.
+- Cierre de sesión y login como Cliente; verificación del Portal de Cliente y catálogo de servicios.
 
 ---
 
 ## 11. Documentación Técnica de Auditoría y Refinamiento
 
 Para consultar los informes de verificación técnica, arquitectura y seguridad:
-- [Informe de Auditoría y Refinamiento Final](docs/auditoria-refinamiento-final.md): Reporte exhaustivo con los 15 puntos requeridos, resolución de causas de error 403, desacoplamiento de dashboards, eliminación integral de emojis y flujo comercial validado.
+- [Informe Final de Implementación Integral](docs/auditoria-implementacion-integral-final.md): Reporte definitivo con evidencias completas de persistencia, E2E, concurrencia, RBAC y tabla de resultados reales.
+- [Informe de Auditoría y Estabilización Final](docs/auditoria-estabilizacion-final.md): Detalle técnico de la erradicación de pantallas negras, ErrorBoundary global y Migración 012.
 - [Informe de Auditoría Integral Previa](docs/auditoria-integral-final.md): Análisis de código, endpoints y arquitectura relacional.
 - [Matriz de Cumplimiento Académico](docs/cumplimiento-academico.md): Mapeo punto por punto de requisitos técnicos y funcionales del proyecto.
+- [Investigación de Seguridad JWT y RBAC](docs/investigacion-jwt.md): Buenas prácticas y justificación de directivas de seguridad implementadas.
 - [Investigación de Seguridad JWT y RBAC](docs/investigacion-jwt.md): Buenas prácticas y justificación de directivas de seguridad implementadas.

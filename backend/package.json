@@ -10,7 +10,9 @@
     "migrate": "node src/scripts/migrate.js",
     "migrate:status": "node src/scripts/migrate.js --status",
     "seed": "node src/scripts/seed.js",
-    "test:api": "node src/scripts/testEndpoints.js"
+    "test:api": "node src/scripts/testEndpoints.js",
+    "test:persistence": "node src/scripts/testDirectMySQLPersistence.js",
+    "test:commercial": "node src/scripts/testCommercialWorkflow.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
