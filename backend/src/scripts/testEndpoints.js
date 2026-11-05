@@ -158,6 +158,7 @@ async function runTests() {
     }
   });
   assert(loginCliente.status === 200 && loginCliente.data.data.token, 'Login Cliente exitoso (200 OK con JWT)');
+  const clientToken = loginCliente.data?.data?.token;
   const clienteToken = loginCliente.data?.data?.token;
 
   // 4. Verificación de Perfil (/api/auth/me)
@@ -421,6 +422,227 @@ async function runTests() {
     headers: { Authorization: `Bearer ${adminToken}` }
   });
   assert(deleteNewUser.status === 200, 'DELETE /usuarios/:id elimina usuario secundario (200 OK)');
+
+  // 12. Estándar Unificado de Errores & Aislamiento RBAC Estricto (Supervisor 403)
+  console.log('\n--- 12. Estándar Unificado de Errores & Control de Privilegios RBAC ---');
+  const supervisorUserList = await request('/usuarios', {
+    headers: { Authorization: `Bearer ${supervisorToken}` }
+  });
+  assert(
+    supervisorUserList.status === 403 &&
+    supervisorUserList.data.success === false &&
+    supervisorUserList.data.error?.code === 'FORBIDDEN' &&
+    supervisorUserList.data.error?.message === 'No tienes permisos para realizar esta operación.',
+    'Supervisor bloqueado con 403 FORBIDDEN en GET /usuarios con estructura de error unificada'
+  );
+
+  const supervisorUserDetail = await request('/usuarios/1', {
+    headers: { Authorization: `Bearer ${supervisorToken}` }
+  });
+  assert(
+    supervisorUserDetail.status === 403 &&
+    supervisorUserDetail.data.error?.code === 'FORBIDDEN',
+    'Supervisor bloqueado con 403 FORBIDDEN en GET /usuarios/:id'
+  );
+
+  const supervisorUserCreate = await request('/usuarios', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${supervisorToken}` },
+    body: {
+      nombre: 'Intento Ilegal',
+      correo: 'ilegal@nexoeventos.com',
+      password: 'Password123*',
+      id_rol: 2
+    }
+  });
+  assert(
+    supervisorUserCreate.status === 403 &&
+    supervisorUserCreate.data.error?.code === 'FORBIDDEN',
+    'Supervisor bloqueado con 403 FORBIDDEN en POST /usuarios'
+  );
+
+  // 13. Módulo de Calendario & Gestión de Agendas en Tiempo Real
+  console.log('\n--- 13. Módulo de Calendario & Agendas en Tiempo Real ---');
+
+  // 13.1 Categorías y Resumen
+  const getCategories = await request('/schedules/categories', {
+    headers: { Authorization: `Bearer ${adminToken}` }
+  });
+  assert(
+    getCategories.status === 200 && Array.isArray(getCategories.data.data) && getCategories.data.data.length >= 4,
+    'GET /schedules/categories retorna al menos las 4 categorías operativas'
+  );
+
+  const getSummary = await request('/schedules/summary', {
+    headers: { Authorization: `Bearer ${adminToken}` }
+  });
+  assert(
+    getSummary.status === 200 && typeof getSummary.data.data.total === 'number',
+    'GET /schedules/summary retorna contadores agregados por categoría'
+  );
+
+  // 13.2 Vistas Semanal y Diaria
+  const getWeek = await request('/schedules/week?fecha=2026-11-04', {
+    headers: { Authorization: `Bearer ${adminToken}` }
+  });
+  assert(
+    getWeek.status === 200 &&
+    getWeek.data.data.lunes === '2026-11-02' &&
+    getWeek.data.data.domingo === '2026-11-08' &&
+    Array.isArray(getWeek.data.data.agendas),
+    'GET /schedules/week calcula correctamente el rango de Lunes a Domingo (2026-11-02 a 2026-11-08)'
+  );
+
+  const getDay = await request('/schedules/day?fecha=2026-11-06', {
+    headers: { Authorization: `Bearer ${adminToken}` }
+  });
+  assert(
+    getDay.status === 200 && Array.isArray(getDay.data.data),
+    'GET /schedules/day retorna actividades para la fecha solicitada'
+  );
+
+  // 13.3 CRUD de Agenda & Detección de Conflictos de Horario (409)
+  const categoryEventId = getCategories.data.data.find(c => c.nombre === 'Event')?.id_categoria || 1;
+  const categoryMeetingId = getCategories.data.data.find(c => c.nombre === 'Meeting')?.id_categoria || 2;
+
+  const createSchedule = await request('/schedules', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: {
+      id_categoria: categoryMeetingId,
+      titulo: 'Reunión de Coordinación Logística VIP',
+      descripcion: 'Alineación técnica de cronograma para gala corporativa.',
+      fecha_inicio: '2026-11-09 14:00:00',
+      fecha_fin: '2026-11-09 15:30:00',
+      id_responsable: 1, // Admin
+      ubicacion: 'Sala de Juntas NexoEventos'
+    }
+  });
+  assert(
+    createSchedule.status === 201 && createSchedule.data.data.id_agenda,
+    'POST /schedules programa nueva actividad de agenda (201 Created)'
+  );
+  const newScheduleId = createSchedule.data?.data?.id_agenda;
+
+  // Prueba de Detección de Conflicto de Intervalo (409 Conflict)
+  const createConflictingSchedule = await request('/schedules', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: {
+      id_categoria: categoryMeetingId,
+      titulo: 'Reunión en Conflicto de Horario',
+      fecha_inicio: '2026-11-09 14:30:00', // Se solapa con 14:00 - 15:30
+      fecha_fin: '2026-11-09 16:00:00',
+      id_responsable: 1, // Mismo responsable
+      ubicacion: 'Sala de Juntas NexoEventos'
+    }
+  });
+  assert(
+    createConflictingSchedule.status === 409 &&
+    createConflictingSchedule.data.error?.code === 'CONFLICT' &&
+    (createConflictingSchedule.data.error?.details?.conflicts || createConflictingSchedule.data.error?.details?.reason),
+    'POST /schedules con solapamiento de horario responde 409 CONFLICT con detalles del choque'
+  );
+
+  // Reagendamiento mediante Drag & Drop (PATCH /schedules/:id/reschedule)
+  const rescheduleOk = await request(`/schedules/${newScheduleId}/reschedule`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: {
+      fecha_inicio: '2026-11-09 16:00:00',
+      fecha_fin: '2026-11-09 17:30:00'
+    }
+  });
+  assert(
+    rescheduleOk.status === 200 && rescheduleOk.data?.data?.fecha_inicio?.includes('16:00'),
+    'PATCH /schedules/:id/reschedule reagenda la actividad a un horario libre (200 OK)',
+    JSON.stringify(rescheduleOk.data)
+  );
+
+  // 13.4 Notas Operativas & Asignación de Equipo
+  const addNote = await request(`/schedules/${newScheduleId}/notes`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: { texto: 'Verificar checklist de audio y micrófonos inalámbricos' }
+  });
+  assert(
+    addNote.status === 201 && addNote.data.data.id_nota,
+    'POST /schedules/:id/notes agrega nota operativa (201 Created)'
+  );
+  const newNoteId = addNote.data?.data?.id_nota;
+
+  const toggleNote = await request(`/schedules/notes/${newNoteId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: { completada: true }
+  });
+  assert(
+    toggleNote.status === 200 && (toggleNote.data.data.completada === 1 || toggleNote.data.data.completada === true),
+    'PATCH /schedules/notes/:idNota marca la tarea como completada (200 OK)'
+  );
+
+  const addTeamMember = await request(`/schedules/${newScheduleId}/team`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: { id_usuario: 2 } // Supervisor
+  });
+  assert(
+    addTeamMember.status === 201,
+    'POST /schedules/:id/team asigna integrante del personal (201 Created)'
+  );
+
+  const removeTeamMember = await request(`/schedules/${newScheduleId}/team/2`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${adminToken}` }
+  });
+  assert(
+    removeTeamMember.status === 200,
+    'DELETE /schedules/:id/team/:userId remueve integrante del personal (200 OK)'
+  );
+
+  const deleteNote = await request(`/schedules/notes/${newNoteId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${adminToken}` }
+  });
+  assert(
+    deleteNote.status === 200,
+    'DELETE /schedules/notes/:idNota elimina la nota operativa (200 OK)'
+  );
+
+  // 13.5 Exportación iCalendar RFC 5545 (.ICS)
+  const icsResponse = await fetch(`${BASE_URL}/schedules/export/ics`, {
+    headers: { Authorization: `Bearer ${adminToken}` }
+  });
+  const icsText = await icsResponse.text();
+  assert(
+    icsResponse.status === 200 &&
+    icsResponse.headers.get('content-type')?.includes('text/calendar') &&
+    icsText.includes('BEGIN:VCALENDAR') &&
+    icsText.includes('PRODID:-//NexoEventos//') &&
+    icsText.includes('END:VCALENDAR'),
+    'GET /schedules/export/ics genera archivo iCalendar estándar RFC 5545 válido'
+  );
+
+  // 13.6 Aislamiento de Privacidad para Rol Cliente
+  const clientSchedules = await request('/schedules', {
+    headers: { Authorization: `Bearer ${clientToken}` }
+  });
+  assert(
+    clientSchedules.status === 200 &&
+    Array.isArray(clientSchedules.data.data) &&
+    clientSchedules.data.data.every(s => s.categoria_nombre === 'Event'),
+    'Rol Cliente únicamente visualiza actividades de categoría Event asociadas a sus eventos'
+  );
+
+  // Limpieza de la agenda de prueba
+  const deleteSchedule = await request(`/schedules/${newScheduleId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${adminToken}` }
+  });
+  assert(
+    deleteSchedule.status === 200,
+    'DELETE /schedules/:id elimina actividad de prueba (200 OK)'
+  );
 
   console.log('\n======================================================');
   console.log(`📊 RESULTADO DE LA SUITE DE PRUEBAS:`);

@@ -11,6 +11,7 @@ import { UsuariosPage } from '../pages/UsuariosPage.jsx';
 import { RolesPage } from '../pages/RolesPage.jsx';
 import { ClientePortalPage } from '../pages/ClientePortalPage.jsx';
 import { PerfilPage } from '../pages/PerfilPage.jsx';
+import { CalendarioPage } from '../pages/CalendarioPage.jsx';
 import { RutaProtegida } from '../components/RutaProtegida.jsx';
 import { Layout } from '../components/Layout.jsx';
 
@@ -80,7 +81,7 @@ export const AppRoutes = () => {
       <Route
         path="/usuarios"
         element={
-          <RutaProtegida allowedRoles={['administrador', 'supervisor']}>
+          <RutaProtegida allowedRoles={['administrador']}>
             <Layout>
               <UsuariosPage />
             </Layout>
@@ -94,6 +95,17 @@ export const AppRoutes = () => {
           <RutaProtegida allowedRoles={['administrador']}>
             <Layout>
               <RolesPage />
+            </Layout>
+          </RutaProtegida>
+        }
+      />
+
+      <Route
+        path="/calendario"
+        element={
+          <RutaProtegida>
+            <Layout>
+              <CalendarioPage />
             </Layout>
           </RutaProtegida>
         }

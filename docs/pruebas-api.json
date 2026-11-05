@@ -295,6 +295,156 @@
       },
       "expectedStatus": 409,
       "description": "Regla de seguridad: evita que el sistema quede sin administradores"
+    },
+    {
+      "name": "25. Calendario - Listar Categorías (200)",
+      "method": "GET",
+      "url": "{{baseUrl}}/schedules/categories",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 200,
+      "description": "Retorna el catálogo cerrado de 4 categorías (Event, Meeting, Setup and Rehearsal, Task Deadlines)"
+    },
+    {
+      "name": "26. Calendario - Resumen de Agendas / Métricas (200)",
+      "method": "GET",
+      "url": "{{baseUrl}}/schedules/summary",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 200,
+      "description": "Retorna contadores de agendas para las 5 tarjetas de resumen"
+    },
+    {
+      "name": "27. Calendario - Vista Semanal Lunes a Domingo (200)",
+      "method": "GET",
+      "url": "{{baseUrl}}/schedules/week?fecha=2026-11-04",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 200,
+      "description": "Calcula el rango estricto de Lunes a Domingo para la fecha solicitada"
+    },
+    {
+      "name": "28. Calendario - Vista Diaria (200)",
+      "method": "GET",
+      "url": "{{baseUrl}}/schedules/day?fecha=2026-11-06",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 200,
+      "description": "Retorna todas las actividades programadas para un día"
+    },
+    {
+      "name": "29. Calendario - Crear Actividad de Agenda (201)",
+      "method": "POST",
+      "url": "{{baseUrl}}/schedules",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "id_categoria": 2,
+        "titulo": "Reunión de Coordinación Logística VIP",
+        "descripcion": "Alineación técnica de cronograma para gala corporativa.",
+        "fecha_inicio": "2026-11-09 14:00:00",
+        "fecha_fin": "2026-11-09 15:30:00",
+        "id_responsable": 1,
+        "ubicacion": "Sala de Juntas NexoEventos"
+      },
+      "expectedStatus": 201,
+      "description": "Crea una nueva actividad en la agenda de NexoEventos"
+    },
+    {
+      "name": "30. Calendario - Detección de Conflicto de Horario (409)",
+      "method": "POST",
+      "url": "{{baseUrl}}/schedules",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "id_categoria": 2,
+        "titulo": "Reunión en Conflicto de Horario",
+        "fecha_inicio": "2026-11-09 14:30:00",
+        "fecha_fin": "2026-11-09 16:00:00",
+        "id_responsable": 1,
+        "ubicacion": "Sala de Juntas NexoEventos"
+      },
+      "expectedStatus": 409,
+      "description": "Bloquea solapamiento de horario para el responsable o integrantes"
+    },
+    {
+      "name": "31. Calendario - Reagendar Actividad Drag & Drop (200)",
+      "method": "PATCH",
+      "url": "{{baseUrl}}/schedules/1/reschedule",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "fecha_inicio": "2026-11-03 15:00:00",
+        "fecha_fin": "2026-11-03 16:30:00"
+      },
+      "expectedStatus": 200,
+      "description": "Permite mover fechas u horas de una agenda con detección de colisiones previa"
+    },
+    {
+      "name": "32. Calendario - Agregar Nota Operativa (201)",
+      "method": "POST",
+      "url": "{{baseUrl}}/schedules/1/notes",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "texto": "Verificar checklist de audio y micrófonos inalámbricos"
+      },
+      "expectedStatus": 201,
+      "description": "Registra una nota o checklist operativa para la agenda"
+    },
+    {
+      "name": "33. Calendario - Toggle Nota Completada (200)",
+      "method": "PATCH",
+      "url": "{{baseUrl}}/schedules/notes/1",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "completada": true
+      },
+      "expectedStatus": 200,
+      "description": "Marca la nota o tarea como completada"
+    },
+    {
+      "name": "34. Calendario - Asignar Integrante de Equipo (201)",
+      "method": "POST",
+      "url": "{{baseUrl}}/schedules/1/team",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "body": {
+        "id_usuario": 2
+      },
+      "expectedStatus": 201,
+      "description": "Asigna un miembro del personal a la agenda con verificación de conflicto"
+    },
+    {
+      "name": "35. Calendario - Exportar iCalendar RFC 5545 .ICS (200)",
+      "method": "GET",
+      "url": "{{baseUrl}}/schedules/export/ics",
+      "headers": {
+        "Authorization": "Bearer {{adminToken}}"
+      },
+      "expectedStatus": 200,
+      "description": "Genera archivo .ics estándar para importar en Google Calendar, Outlook o Apple Calendar"
+    },
+    {
+      "name": "36. Seguridad RBAC - Supervisor Bloqueado en Usuarios (403)",
+      "method": "GET",
+      "url": "{{baseUrl}}/usuarios",
+      "headers": {
+        "Authorization": "Bearer {{supervisorToken}}"
+      },
+      "expectedStatus": 403,
+      "description": "Verifica que el supervisor no tenga acceso al módulo de administración de usuarios"
     }
   ]
 }

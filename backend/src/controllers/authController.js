@@ -26,25 +26,25 @@ export const AuthController = {
 
       // 1. Validaciones de presencia y formato
       if (!nombre || !nombre.trim()) {
-        return sendError(res, 400, 'El nombre completo es obligatorio');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'nombre', reason: 'El nombre completo es obligatorio' });
       }
 
       if (!correo || !isValidEmail(correo)) {
-        return sendError(res, 400, 'Debe proporcionar un correo electrónico válido');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'correo', reason: 'Debe proporcionar un correo electrónico válido' });
       }
 
       if (!password || !isValidPassword(password)) {
-        return sendError(res, 400, 'La contraseña debe tener como mínimo 8 caracteres');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'password', reason: 'La contraseña debe tener como mínimo 8 caracteres' });
       }
 
       if (!CLIENT_TYPES.includes(tipo_cliente)) {
-        return sendError(res, 400, `El tipo de cliente debe ser uno de: ${CLIENT_TYPES.join(', ')}`);
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'tipo_cliente', reason: `El tipo de cliente debe ser uno de: ${CLIENT_TYPES.join(', ')}` });
       }
 
       // 2. Comprobar duplicidad de correo en usuarios
       const existingUser = await UsuarioModel.findByEmail(correo);
       if (existingUser) {
-        return sendError(res, 400, 'El correo electrónico ya se encuentra registrado en el sistema');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'correo', reason: 'El correo electrónico ya se encuentra registrado en el sistema' });
       }
 
       // 3. Hashear la contraseña con bcrypt (10 rounds)
@@ -89,7 +89,7 @@ export const AuthController = {
     } catch (error) {
       await connection.rollback();
       console.error('Error en AuthController.register:', error);
-      return sendError(res, 500, 'Error al registrar el usuario en el sistema');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     } finally {
       connection.release();
     }
@@ -104,19 +104,19 @@ export const AuthController = {
       const { correo, password } = req.body;
 
       if (!correo || !password) {
-        return sendError(res, 400, 'Debe ingresar el correo y la contraseña');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { reason: 'Debe ingresar el correo y la contraseña' });
       }
 
       // Buscar usuario incluyendo su contraseña para verificarla
       const user = await UsuarioModel.findByEmailWithPassword(correo);
       if (!user) {
-        return sendError(res, 401, 'Credenciales incorrectas: correo o contraseña no válidos');
+        return sendError(res, 401, 'Credenciales incorrectas: correo o contraseña no válidos', 'UNAUTHORIZED');
       }
 
       // Comparación con bcrypt
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        return sendError(res, 401, 'Credenciales incorrectas: correo o contraseña no válidos');
+        return sendError(res, 401, 'Credenciales incorrectas: correo o contraseña no válidos', 'UNAUTHORIZED');
       }
 
       // Generar JWT
@@ -149,7 +149,7 @@ export const AuthController = {
       });
     } catch (error) {
       console.error('Error en AuthController.login:', error);
-      return sendError(res, 500, 'Error interno durante el inicio de sesión');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -158,11 +158,10 @@ export const AuthController = {
    */
   async getMe(req, res) {
     try {
-      // req.user ya fue poblado y validado por authMiddleware
       return sendSuccess(res, 200, 'Perfil de usuario obtenido', req.user);
     } catch (error) {
       console.error('Error en AuthController.getMe:', error);
-      return sendError(res, 500, 'Error al consultar el perfil');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -175,13 +174,13 @@ export const AuthController = {
       const { id_usuario, id_cliente } = req.user;
 
       if (nombre && !nombre.trim()) {
-        return sendError(res, 400, 'El nombre no puede ser vacío');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'nombre', reason: 'El nombre no puede ser vacío' });
       }
 
       let hashedPassword = null;
       if (password) {
         if (!isValidPassword(password)) {
-          return sendError(res, 400, 'La nueva contraseña debe tener mínimo 8 caracteres');
+          return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'password', reason: 'La nueva contraseña debe tener mínimo 8 caracteres' });
         }
         hashedPassword = await bcrypt.hash(password, 10);
       }
@@ -214,8 +213,7 @@ export const AuthController = {
       return sendSuccess(res, 200, 'Perfil actualizado correctamente', updatedUser);
     } catch (error) {
       console.error('Error en AuthController.updateProfile:', error);
-      return sendError(res, 500, 'Error al actualizar el perfil');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   }
 };
-

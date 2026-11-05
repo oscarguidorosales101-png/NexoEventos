@@ -2,12 +2,13 @@ import { sendError } from '../utils/response.js';
 
 /**
  * Middleware para autorización basada en roles (RBAC)
- * Permite acceso únicamente a los roles especificados en los argumentos
+ * Permite acceso únicamente a los roles especificados en los argumentos.
+ * Si el usuario no tiene los permisos requeridos, responde con HTTP 403 FORBIDDEN.
  */
 export const authorizeRoles = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user || !req.user.rol) {
-      return sendError(res, 401, 'Usuario no autenticado para validar permisos');
+      return sendError(res, 401, 'No has iniciado sesión o tu sesión ha expirado.', 'UNAUTHORIZED');
     }
 
     const userRole = req.user.rol.toLowerCase();
@@ -17,7 +18,8 @@ export const authorizeRoles = (...allowedRoles) => {
       return sendError(
         res,
         403,
-        `Acceso denegado: El rol '${req.user.rol}' no tiene permisos suficientes para realizar esta acción. Requerido: ${allowedRoles.join(', ')}`
+        'No tienes permisos para realizar esta operación.',
+        'FORBIDDEN'
       );
     }
 
@@ -27,4 +29,3 @@ export const authorizeRoles = (...allowedRoles) => {
 
 export const requireAdmin = authorizeRoles('administrador');
 export const requireStaff = authorizeRoles('administrador', 'supervisor');
-

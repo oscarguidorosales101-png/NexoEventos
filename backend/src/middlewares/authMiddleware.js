@@ -7,12 +7,12 @@ export const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
 
     if (!authHeader) {
-      return sendError(res, 401, 'Acceso no autorizado: Token no proporcionado');
+      return sendError(res, 401, 'No has iniciado sesión o tu sesión ha expirado.', 'UNAUTHORIZED');
     }
 
     const parts = authHeader.split(' ');
     if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      return sendError(res, 401, 'Formato de token inválido. Se espera: Bearer <token>');
+      return sendError(res, 401, 'No has iniciado sesión o tu sesión ha expirado.', 'UNAUTHORIZED');
     }
 
     const token = parts[1];
@@ -22,9 +22,9 @@ export const authMiddleware = async (req, res, next) => {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
       if (err.name === 'TokenExpiredError') {
-        return sendError(res, 401, 'Sesión expirada. Por favor inicie sesión nuevamente.', { code: 'TOKEN_EXPIRED' });
+        return sendError(res, 401, 'No has iniciado sesión o tu sesión ha expirado.', 'TOKEN_EXPIRED');
       }
-      return sendError(res, 401, 'Token inválido o manipulado', { code: 'INVALID_TOKEN' });
+      return sendError(res, 401, 'No has iniciado sesión o tu sesión ha expirado.', 'INVALID_TOKEN');
     }
 
     // Comprobar existencia real del usuario en la base de datos y obtener rol actualizado
@@ -40,7 +40,7 @@ export const authMiddleware = async (req, res, next) => {
     );
 
     if (rows.length === 0) {
-      return sendError(res, 401, 'El usuario asociado a este token no existe en el sistema');
+      return sendError(res, 401, 'No has iniciado sesión o tu sesión ha expirado.', 'USER_NOT_FOUND');
     }
 
     const user = rows[0];
@@ -58,7 +58,6 @@ export const authMiddleware = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Error en authMiddleware:', error);
-    return sendError(res, 500, 'Error interno durante la verificación de credenciales');
+    return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
   }
 };
-

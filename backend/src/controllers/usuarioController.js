@@ -8,34 +8,43 @@ import { isValidEmail, isValidPassword } from '../utils/validator.js';
 export const UsuarioController = {
   /**
    * GET /api/usuarios - Listar todos los usuarios
-   * Permitido para Administrador y Supervisor
+   * Exclusivo para Administrador
    */
   async getAll(req, res) {
     try {
+      if (req.user.rol !== 'administrador') {
+        return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
+      }
+
       const usuarios = await UsuarioModel.findAll();
       return sendSuccess(res, 200, 'Listado de usuarios obtenido', usuarios);
     } catch (error) {
       console.error('Error en UsuarioController.getAll:', error);
-      return sendError(res, 500, 'Error al obtener usuarios');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
   /**
    * GET /api/usuarios/:id - Consultar usuario por ID
+   * Exclusivo para Administrador
    */
   async getById(req, res) {
     try {
+      if (req.user.rol !== 'administrador') {
+        return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
+      }
+
       const { id } = req.params;
       const usuario = await UsuarioModel.findById(id);
 
       if (!usuario) {
-        return sendError(res, 404, `Usuario con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       return sendSuccess(res, 200, 'Usuario encontrado', usuario);
     } catch (error) {
       console.error('Error en UsuarioController.getById:', error);
-      return sendError(res, 500, 'Error al obtener usuario');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -46,54 +55,54 @@ export const UsuarioController = {
   async create(req, res) {
     try {
       if (req.user.rol !== 'administrador') {
-        return sendError(res, 403, 'Acceso denegado: Solo el Administrador puede registrar nuevos usuarios');
+        return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
       }
 
       const { id_rol, id_cliente, nombre, correo, password } = req.body;
 
       if (!nombre || !nombre.trim()) {
-        return sendError(res, 400, 'El nombre completo es obligatorio');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'nombre', reason: 'El nombre completo es obligatorio' });
       }
 
       if (!correo || !isValidEmail(correo)) {
-        return sendError(res, 400, 'Debe proporcionar un correo electrónico válido');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'correo', reason: 'Debe proporcionar un correo electrónico válido' });
       }
 
       if (!password || !isValidPassword(password)) {
-        return sendError(res, 400, 'La contraseña debe tener al menos 8 caracteres');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'password', reason: 'La contraseña debe tener al menos 8 caracteres' });
       }
 
       if (!id_rol) {
-        return sendError(res, 400, 'Debe asignar un rol válido al usuario');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'id_rol', reason: 'Debe asignar un rol válido al usuario' });
       }
 
       // Validar existencia del rol
       const rolExistente = await RolModel.findById(id_rol);
       if (!rolExistente) {
-        return sendError(res, 404, `El rol referenciado con ID ${id_rol} no existe`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND', { detail: `El rol con ID ${id_rol} no existe` });
       }
 
       // Si el rol es cliente (id_rol = 3), id_cliente es obligatorio
       if (Number(id_rol) === 3) {
         if (!id_cliente) {
-          return sendError(res, 400, 'Los usuarios con rol cliente deben estar vinculados a un cliente (id_cliente)');
+          return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'id_cliente', reason: 'Los usuarios con rol cliente deben estar vinculados a un cliente' });
         }
         const clienteExistente = await ClienteModel.findById(id_cliente);
         if (!clienteExistente) {
-          return sendError(res, 404, `El cliente referenciado con ID ${id_cliente} no existe`);
+          return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND', { detail: `El cliente con ID ${id_cliente} no existe` });
         }
 
         // Verificar que no esté ya asociado a otro usuario
         const usuarioAsociado = await UsuarioModel.findByClientId(id_cliente);
         if (usuarioAsociado) {
-          return sendError(res, 409, `El cliente con ID ${id_cliente} ya tiene asignada una cuenta de usuario`);
+          return sendError(res, 409, 'No se puede completar la operación porque existe una dependencia o conflicto.', 'CONFLICT', { reason: `El cliente con ID ${id_cliente} ya tiene asignada una cuenta de usuario` });
         }
       }
 
       // Validar unicidad del correo
       const usuarioDuplicado = await UsuarioModel.findByEmail(correo);
       if (usuarioDuplicado) {
-        return sendError(res, 400, 'El correo electrónico ya está registrado');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'correo', reason: 'El correo electrónico ya está registrado' });
       }
 
       // Hashear contraseña con bcrypt
@@ -111,7 +120,7 @@ export const UsuarioController = {
       return sendSuccess(res, 201, 'Usuario creado exitosamente', nuevoUsuario);
     } catch (error) {
       console.error('Error en UsuarioController.create:', error);
-      return sendError(res, 500, 'Error al registrar usuario');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -122,14 +131,14 @@ export const UsuarioController = {
   async update(req, res) {
     try {
       if (req.user.rol !== 'administrador') {
-        return sendError(res, 403, 'Acceso denegado: Solo el Administrador puede modificar cuentas de usuario');
+        return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
       }
 
       const { id } = req.params;
       const usuarioExistente = await UsuarioModel.findById(id);
 
       if (!usuarioExistente) {
-        return sendError(res, 404, `Usuario con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       const { id_rol, id_cliente, nombre, correo, password } = req.body;
@@ -143,7 +152,9 @@ export const UsuarioController = {
           return sendError(
             res,
             409,
-            'Operación bloqueada por seguridad: No se puede cambiar el rol del único administrador del sistema'
+            'No se puede completar la operación porque existe una dependencia o conflicto.',
+            'CONFLICT',
+            { reason: 'No se puede cambiar el rol del único administrador del sistema' }
           );
         }
       }
@@ -152,7 +163,7 @@ export const UsuarioController = {
       if (id_rol !== undefined) {
         const rol = await RolModel.findById(finalRolId);
         if (!rol) {
-          return sendError(res, 404, `El rol con ID ${finalRolId} no existe`);
+          return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND', { detail: `El rol con ID ${finalRolId} no existe` });
         }
       }
 
@@ -160,14 +171,13 @@ export const UsuarioController = {
       let finalClienteId = id_cliente !== undefined ? (id_cliente ? Number(id_cliente) : null) : usuarioExistente.id_cliente;
       if (finalRolId === 3) {
         if (!finalClienteId) {
-          return sendError(res, 400, 'Los usuarios con rol cliente requieren un id_cliente asociado');
+          return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'id_cliente', reason: 'Los usuarios con rol cliente requieren un id_cliente asociado' });
         }
         const cliente = await ClienteModel.findById(finalClienteId);
         if (!cliente) {
-          return sendError(res, 404, `El cliente con ID ${finalClienteId} no existe`);
+          return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND', { detail: `El cliente con ID ${finalClienteId} no existe` });
         }
       } else {
-        // Usuarios administrativos no requieren id_cliente
         finalClienteId = null;
       }
 
@@ -175,21 +185,20 @@ export const UsuarioController = {
       const finalCorreo = correo ? correo.trim().toLowerCase() : usuarioExistente.correo;
 
       if (correo && !isValidEmail(finalCorreo)) {
-        return sendError(res, 400, 'El formato de correo es inválido');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'correo', reason: 'El formato de correo es inválido' });
       }
 
-      // Si cambió el correo, verificar duplicidad
       if (finalCorreo !== usuarioExistente.correo.toLowerCase()) {
         const duplicado = await UsuarioModel.findByEmail(finalCorreo);
         if (duplicado) {
-          return sendError(res, 400, 'El correo electrónico ya está en uso por otra cuenta');
+          return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'correo', reason: 'El correo electrónico ya está en uso por otra cuenta' });
         }
       }
 
       let hashedPassword = null;
       if (password) {
         if (!isValidPassword(password)) {
-          return sendError(res, 400, 'La contraseña debe tener mínimo 8 caracteres');
+          return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'password', reason: 'La contraseña debe tener mínimo 8 caracteres' });
         }
         const salt = await bcrypt.genSalt(10);
         hashedPassword = await bcrypt.hash(password, salt);
@@ -206,7 +215,7 @@ export const UsuarioController = {
       return sendSuccess(res, 200, 'Usuario actualizado correctamente', usuarioActualizado);
     } catch (error) {
       console.error('Error en UsuarioController.update:', error);
-      return sendError(res, 500, 'Error al actualizar usuario');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -217,14 +226,14 @@ export const UsuarioController = {
   async delete(req, res) {
     try {
       if (req.user.rol !== 'administrador') {
-        return sendError(res, 403, 'Acceso denegado: Solo el Administrador puede eliminar usuarios');
+        return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
       }
 
       const { id } = req.params;
       const usuario = await UsuarioModel.findById(id);
 
       if (!usuario) {
-        return sendError(res, 404, `Usuario con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       // REGLA CRÍTICA: Proteger al último administrador contra eliminación
@@ -234,7 +243,9 @@ export const UsuarioController = {
           return sendError(
             res,
             409,
-            'Operación bloqueada por seguridad: No se puede eliminar el único administrador activo del sistema'
+            'No se puede completar la operación porque existe una dependencia o conflicto.',
+            'CONFLICT',
+            { reason: 'No se puede eliminar el único administrador activo del sistema' }
           );
         }
       }
@@ -243,8 +254,7 @@ export const UsuarioController = {
       return sendSuccess(res, 200, `Usuario con ID ${id} eliminado correctamente`);
     } catch (error) {
       console.error('Error en UsuarioController.delete:', error);
-      return sendError(res, 500, 'Error al eliminar usuario');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   }
 };
-

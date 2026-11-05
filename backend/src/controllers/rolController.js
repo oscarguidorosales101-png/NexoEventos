@@ -11,7 +11,7 @@ export const RolController = {
       return sendSuccess(res, 200, 'Listado de roles obtenido', roles);
     } catch (error) {
       console.error('Error en RolController.getAll:', error);
-      return sendError(res, 500, 'Error al obtener roles');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -23,12 +23,12 @@ export const RolController = {
       const { id } = req.params;
       const rol = await RolModel.findById(id);
       if (!rol) {
-        return sendError(res, 404, `Rol con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
       return sendSuccess(res, 200, 'Rol encontrado', rol);
     } catch (error) {
       console.error('Error en RolController.getById:', error);
-      return sendError(res, 500, 'Error al obtener rol');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -40,7 +40,7 @@ export const RolController = {
     try {
       const { nombre, descripcion } = req.body;
       if (!nombre || !nombre.trim()) {
-        return sendError(res, 400, 'El nombre del rol es obligatorio');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'nombre', reason: 'El nombre del rol es obligatorio' });
       }
 
       // Regla de catálogo fijo: el sistema solo admite los 3 roles funcionales estándar
@@ -49,20 +49,22 @@ export const RolController = {
         return sendError(
           res,
           409,
-          'Operación no permitida: NexoEventos opera bajo un catálogo cerrado de roles funcionales (administrador, supervisor, cliente). No se permite crear roles funcionales adicionales.'
+          'No se puede completar la operación porque existe una dependencia o conflicto.',
+          'CONFLICT',
+          { reason: 'NexoEventos opera bajo un catálogo cerrado de roles funcionales (administrador, supervisor, cliente).' }
         );
       }
 
       const existing = await RolModel.findByName(normalizedName);
       if (existing) {
-        return sendError(res, 409, `El rol '${nombre}' ya existe en el sistema`);
+        return sendError(res, 409, 'No se puede completar la operación porque existe una dependencia o conflicto.', 'CONFLICT', { reason: `El rol '${nombre}' ya existe en el sistema` });
       }
 
       const nuevoRol = await RolModel.create({ nombre: normalizedName, descripcion });
       return sendSuccess(res, 201, 'Rol creado exitosamente', nuevoRol);
     } catch (error) {
       console.error('Error en RolController.create:', error);
-      return sendError(res, 500, 'Error al registrar rol');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -76,7 +78,7 @@ export const RolController = {
 
       const rol = await RolModel.findById(id);
       if (!rol) {
-        return sendError(res, 404, `Rol con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       // Proteger los nombres esenciales de los tres roles fijos
@@ -84,7 +86,9 @@ export const RolController = {
         return sendError(
           res,
           409,
-          'Operación no permitida: No se pueden renombrar los identificadores de los roles del sistema base (administrador, supervisor, cliente).'
+          'No se puede completar la operación porque existe una dependencia o conflicto.',
+          'CONFLICT',
+          { reason: 'No se pueden renombrar los identificadores de los roles del sistema base.' }
         );
       }
 
@@ -96,7 +100,7 @@ export const RolController = {
       return sendSuccess(res, 200, 'Rol actualizado correctamente', rolActualizado);
     } catch (error) {
       console.error('Error en RolController.update:', error);
-      return sendError(res, 500, 'Error al actualizar rol');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -108,7 +112,7 @@ export const RolController = {
       const { id } = req.params;
       const rol = await RolModel.findById(id);
       if (!rol) {
-        return sendError(res, 404, `Rol con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       // Proteger los tres roles iniciales del sistema
@@ -116,7 +120,9 @@ export const RolController = {
         return sendError(
           res,
           409,
-          'Conflicto de integridad: Los tres roles estructurales del sistema (administrador, supervisor, cliente) son protegidos y no pueden eliminarse.'
+          'No se puede completar la operación porque existe una dependencia o conflicto.',
+          'CONFLICT',
+          { reason: 'Los tres roles estructurales del sistema son protegidos y no pueden eliminarse.' }
         );
       }
 
@@ -125,7 +131,9 @@ export const RolController = {
         return sendError(
           res,
           409,
-          `No se puede eliminar el rol porque existen ${usersCount} usuarios asignados a él`
+          'No se puede completar la operación porque existe una dependencia o conflicto.',
+          'CONFLICT',
+          { reason: `Existen ${usersCount} usuarios asignados a este rol.` }
         );
       }
 
@@ -133,8 +141,7 @@ export const RolController = {
       return sendSuccess(res, 200, `Rol con ID ${id} eliminado correctamente`);
     } catch (error) {
       console.error('Error en RolController.delete:', error);
-      return sendError(res, 500, 'Error al eliminar rol');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   }
 };
-

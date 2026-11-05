@@ -1,7 +1,8 @@
 -- =============================================================================
 -- BASE DE DATOS: nexoeventos
 -- MOTOR: MySQL 8.0 | CHARSET: utf8mb4 | COLLATION: utf8mb4_unicode_ci
--- SISTEMA INTEGRAL DE GESTIÓN DE EVENTOS - NEXOEVENTOS
+-- SISTEMA INTEGRAL DE GESTIÓN DE EVENTOS Y AGENDAS - NEXOEVENTOS
+-- TIMEZONE DE LA APLICACIÓN: America/Costa_Rica
 -- =============================================================================
 
 CREATE DATABASE IF NOT EXISTS `nexoeventos`
@@ -106,7 +107,78 @@ CREATE TABLE `usuarios` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
--- 7. TABLA DE CONTROL DE MIGRACIONES: schema_migrations
+-- 7. TABLA: categorias_agenda (Extensión Calendario)
+-- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS `categorias_agenda`;
+CREATE TABLE `categorias_agenda` (
+  `id_categoria` INT AUTO_INCREMENT PRIMARY KEY,
+  `nombre` VARCHAR(60) NOT NULL UNIQUE,
+  `color` VARCHAR(20) NOT NULL,
+  `descripcion` VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 8. TABLA: agendas (Extensión Calendario)
+-- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS `agendas`;
+CREATE TABLE `agendas` (
+  `id_agenda` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_categoria` INT NOT NULL,
+  `id_evento` INT NULL,
+  `id_responsable` INT NOT NULL,
+  `titulo` VARCHAR(150) NOT NULL,
+  `descripcion` TEXT,
+  `fecha_inicio` DATETIME NOT NULL,
+  `fecha_fin` DATETIME NOT NULL,
+  `ubicacion` VARCHAR(200) NOT NULL,
+  `imagen_portada` VARCHAR(255) NULL,
+  `estado` VARCHAR(30) NOT NULL DEFAULT 'programada',
+  `fecha_creacion` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_agendas_categoria` (`id_categoria`),
+  INDEX `idx_agendas_evento` (`id_evento`),
+  INDEX `idx_agendas_responsable` (`id_responsable`),
+  INDEX `idx_agendas_rango_fechas` (`fecha_inicio`, `fecha_fin`),
+  INDEX `idx_agendas_estado` (`estado`),
+  CONSTRAINT `fk_agendas_categoria` FOREIGN KEY (`id_categoria`) REFERENCES `categorias_agenda` (`id_categoria`) ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT `fk_agendas_evento` FOREIGN KEY (`id_evento`) REFERENCES `eventos` (`id_evento`) ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT `fk_agendas_responsable` FOREIGN KEY (`id_responsable`) REFERENCES `usuarios` (`id_usuario`) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 9. TABLA: agenda_integrantes (Extensión Calendario)
+-- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS `agenda_integrantes`;
+CREATE TABLE `agenda_integrantes` (
+  `id_agenda` INT NOT NULL,
+  `id_usuario` INT NOT NULL,
+  `fecha_asignacion` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_agenda`, `id_usuario`),
+  INDEX `idx_integrantes_usuario` (`id_usuario`),
+  CONSTRAINT `fk_integrantes_agenda` FOREIGN KEY (`id_agenda`) REFERENCES `agendas` (`id_agenda`) ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT `fk_integrantes_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 10. TABLA: agenda_notas (Extensión Calendario)
+-- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS `agenda_notas`;
+CREATE TABLE `agenda_notas` (
+  `id_nota` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_agenda` INT NOT NULL,
+  `id_usuario` INT NOT NULL,
+  `descripcion` TEXT NOT NULL,
+  `completada` BOOLEAN NOT NULL DEFAULT FALSE,
+  `fecha_limite` DATETIME NULL,
+  `fecha_creacion` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_notas_agenda` (`id_agenda`),
+  INDEX `idx_notas_usuario` (`id_usuario`),
+  CONSTRAINT `fk_notas_agenda` FOREIGN KEY (`id_agenda`) REFERENCES `agendas` (`id_agenda`) ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT `fk_notas_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 11. TABLA DE CONTROL DE MIGRACIONES: schema_migrations
 -- -----------------------------------------------------------------------------
 DROP TABLE IF EXISTS `schema_migrations`;
 CREATE TABLE `schema_migrations` (
@@ -159,7 +231,7 @@ INSERT INTO `eventos` (`id_evento`, `id_cliente`, `nombre`, `tipo_evento`, `fech
   (2, 2, 'Boda Real Carolina y Fernando', 'Boda', '2026-11-28', 'Hacienda El Paraíso, La Calera', 'pendiente')
 ON DUPLICATE KEY UPDATE `estado` = VALUES(`estado`);
 
--- Detalle de eventos (relación muchos a muchos con precio unitario congelado)
+-- Detalle de eventos
 INSERT INTO `detalle_eventos` (`id_detalle`, `id_evento`, `id_servicio`, `cantidad`, `precio_unitario`) VALUES
   (1, 1, 6, 1, 2800.00),
   (2, 1, 2, 2, 1800.00),
@@ -168,3 +240,41 @@ INSERT INTO `detalle_eventos` (`id_detalle`, `id_evento`, `id_servicio`, `cantid
   (5, 2, 5, 1, 1500.00)
 ON DUPLICATE KEY UPDATE `cantidad` = VALUES(`cantidad`);
 
+-- Categorías de Calendario
+INSERT INTO `categorias_agenda` (`id_categoria`, `nombre`, `color`, `descripcion`) VALUES
+  (1, 'Event', '#D4AF37', 'Eventos principales y ceremonias contratadas.'),
+  (2, 'Meeting', '#3B82F6', 'Reuniones de coordinación y comités con clientes o proveedores.'),
+  (3, 'Setup and Rehearsal', '#F59E0B', 'Montajes técnicos, ensayos generales y pruebas de sonido e iluminación.'),
+  (4, 'Task Deadlines', '#EC4899', 'Hitos clave y fechas límite de entregas operativas.')
+ON DUPLICATE KEY UPDATE `color` = VALUES(`color`), `descripcion` = VALUES(`descripcion`);
+
+-- Agendas iniciales
+INSERT INTO `agendas` (`id_agenda`, `id_categoria`, `id_evento`, `id_responsable`, `titulo`, `descripcion`, `fecha_inicio`, `fecha_fin`, `ubicacion`, `estado`) VALUES
+  (1, 2, 2, 2, 'Reunión Preliminar con Proveedores de Sonido', 'Inspección técnica de acometidas eléctricas y acústica del salón principal.', '2026-11-03 15:00:00', '2026-11-03 16:30:00', 'Hacienda El Paraíso, La Calera', 'completada'),
+  (2, 2, 1, 2, 'Alineación de Logística y Banquete Corporativo', 'Revisión final de tiempos de servicio, opciones de menú y asignación de mesas.', '2026-11-04 10:00:00', '2026-11-04 11:30:00', 'Sala de Juntas NexoEventos', 'completada'),
+  (3, 3, 1, 2, 'Montaje Técnico y Prueba de Iluminación DMX', 'Calibración de robóticas, pantallas LED y chequeo de sonido lineal.', '2026-11-05 14:00:00', '2026-11-05 17:00:00', 'Centro de Convenciones Ágora - Gran Diamante', 'en_progreso'),
+  (4, 4, 1, 1, 'Cierre de Confirmaciones y Entrega de Escarapelas', 'Fecha límite para emisión de códigos QR y entrega de material a comité anfitrión.', '2026-11-06 09:00:00', '2026-11-06 12:00:00', 'Sede Administrativa NexoEventos', 'programada'),
+  (5, 1, 2, 1, 'Boda Real Carolina y Fernando — Ceremonia y Recepción', 'Planificación integral y coordinación en vivo de la boda, banquete y show musical.', '2026-11-07 16:00:00', '2026-11-07 23:00:00', 'Hacienda El Paraíso, La Calera', 'programada')
+ON DUPLICATE KEY UPDATE `titulo` = VALUES(`titulo`);
+
+-- Integrantes de Agendas
+INSERT INTO `agenda_integrantes` (`id_agenda`, `id_usuario`) VALUES
+  (1, 2),
+  (2, 2),
+  (2, 1),
+  (3, 2),
+  (3, 1),
+  (4, 1),
+  (5, 1),
+  (5, 2)
+ON DUPLICATE KEY UPDATE `fecha_asignacion` = VALUES(`fecha_asignacion`);
+
+-- Notas operativas
+INSERT INTO `agenda_notas` (`id_nota`, `id_agenda`, `id_usuario`, `descripcion`, `completada`, `fecha_limite`) VALUES
+  (1, 1, 2, 'Medir voltaje disponible en la zona del jardín para el generador de respaldo.', TRUE, '2026-11-03 14:00:00'),
+  (2, 2, 2, 'Confirmar alternativas de menú para 12 asistentes con dieta vegetariana y celíaca.', TRUE, '2026-11-04 09:30:00'),
+  (3, 3, 2, 'Verificar que las consolas DMX reconozcan las cabezas móviles nuevas.', FALSE, '2026-11-05 16:00:00'),
+  (4, 4, 1, 'Imprimir 250 credenciales plastificadas con cordón dorado institucional.', FALSE, '2026-11-06 11:00:00'),
+  (5, 5, 1, 'Coordinar la llegada de los floristas para armado de arco nupcial a las 13:00.', FALSE, '2026-11-07 13:00:00'),
+  (6, 5, 2, 'Comprobar microfonía inalámbrica de votos matrimoniales.', FALSE, '2026-11-07 15:30:00')
+ON DUPLICATE KEY UPDATE `descripcion` = VALUES(`descripcion`);

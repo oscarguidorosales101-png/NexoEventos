@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
   LayoutDashboard,
+  CalendarDays,
   Users,
   Briefcase,
   Calendar,
@@ -60,6 +61,12 @@ export const Sidebar = () => {
           <span>Panel de Control</span>
         </NavLink>
 
+        {/* Módulo de Calendario y Agendas en Tiempo Real */}
+        <NavLink to="/calendario" style={navItemStyle}>
+          <CalendarDays size={18} />
+          <span>Calendario y Agenda</span>
+        </NavLink>
+
         {/* Módulos Operativos para Admin y Supervisor */}
         {(isAdmin || isSupervisor) && (
           <>
@@ -114,22 +121,23 @@ export const Sidebar = () => {
             letterSpacing: '0.08em',
             color: 'var(--text-dim)'
           }}>
-            {isAdmin ? 'Administración' : isSupervisor ? 'Supervisión' : 'Mi Cuenta'}
+            {isAdmin ? 'Administración' : isSupervisor ? 'Operaciones' : 'Mi Cuenta'}
           </span>
         </div>
 
-        {(isAdmin || isSupervisor) && (
-          <NavLink to="/usuarios" style={navItemStyle}>
-            <UserCheck size={18} />
-            <span>Usuarios {isSupervisor && <small style={{ fontSize: '0.7em', color: 'var(--text-dim)' }}>(Ver)</small>}</span>
-          </NavLink>
-        )}
-
+        {/* EXCLUSIVO PARA ADMINISTRADOR: Usuarios y Roles */}
         {isAdmin && (
-          <NavLink to="/roles" style={navItemStyle}>
-            <Shield size={18} />
-            <span>Catálogo de Roles</span>
-          </NavLink>
+          <>
+            <NavLink to="/usuarios" style={navItemStyle}>
+              <UserCheck size={18} />
+              <span>Gestión de Usuarios</span>
+            </NavLink>
+
+            <NavLink to="/roles" style={navItemStyle}>
+              <Shield size={18} />
+              <span>Catálogo de Roles</span>
+            </NavLink>
+          </>
         )}
 
         <NavLink to="/perfil" style={navItemStyle}>
@@ -156,4 +164,3 @@ export const Sidebar = () => {
     </aside>
   );
 };
-

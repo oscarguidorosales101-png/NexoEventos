@@ -20,7 +20,7 @@ export const EventoController = {
       return sendSuccess(res, 200, 'Listado de eventos obtenido', eventos);
     } catch (error) {
       console.error('Error en EventoController.getAll:', error);
-      return sendError(res, 500, 'Error al obtener eventos');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -33,18 +33,18 @@ export const EventoController = {
       const evento = await EventoModel.findById(id);
 
       if (!evento) {
-        return sendError(res, 404, `Evento con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       // Restricción de propiedad para clientes
       if (req.user.rol === 'cliente' && Number(evento.id_cliente) !== Number(req.user.id_cliente)) {
-        return sendError(res, 403, 'Acceso denegado: No tiene permisos para consultar eventos de otros clientes');
+        return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
       }
 
       return sendSuccess(res, 200, 'Evento encontrado', evento);
     } catch (error) {
       console.error('Error en EventoController.getById:', error);
-      return sendError(res, 500, 'Error al obtener evento');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -59,14 +59,14 @@ export const EventoController = {
       // Seguridad: Si es cliente, el id_cliente SIEMPRE se toma de la sesión autenticada
       if (req.user.rol === 'cliente') {
         if (!req.user.id_cliente) {
-          return sendError(res, 400, 'Su cuenta de usuario no tiene un perfil de cliente asociado');
+          return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { reason: 'Su cuenta no tiene un perfil de cliente asociado' });
         }
         id_cliente = req.user.id_cliente;
         estado = 'pendiente'; // Los clientes solo pueden crear solicitudes pendientes
       } else {
         // Administrador o supervisor deben especificar un id_cliente válido
         if (!id_cliente) {
-          return sendError(res, 400, 'El campo id_cliente es obligatorio');
+          return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'id_cliente', reason: 'El campo id_cliente es obligatorio' });
         }
         estado = estado || 'pendiente';
       }
@@ -74,28 +74,28 @@ export const EventoController = {
       // Validar existencia de la clave foránea en clientes
       const clienteExistente = await ClienteModel.findById(id_cliente);
       if (!clienteExistente) {
-        return sendError(res, 404, `El cliente referenciado con ID ${id_cliente} no existe`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND', { detail: `El cliente con ID ${id_cliente} no existe` });
       }
 
       // Validaciones de campos
       if (!nombre || !nombre.trim()) {
-        return sendError(res, 400, 'El nombre del evento es obligatorio');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'nombre', reason: 'El nombre del evento es obligatorio' });
       }
 
       if (!tipo_evento || !tipo_evento.trim()) {
-        return sendError(res, 400, 'El tipo de evento es obligatorio (ej. Boda, Corporativo, Aniversario)');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'tipo_evento', reason: 'El tipo de evento es obligatorio' });
       }
 
       if (!fecha_evento || !isValidDate(fecha_evento)) {
-        return sendError(res, 400, 'Debe especificar una fecha de evento válida (YYYY-MM-DD)');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'fecha_evento', reason: 'Debe especificar una fecha de evento válida' });
       }
 
       if (!ubicacion || !ubicacion.trim()) {
-        return sendError(res, 400, 'La ubicación del evento es obligatoria');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'ubicacion', reason: 'La ubicación del evento es obligatoria' });
       }
 
       if (!EVENT_STATUSES.includes(estado)) {
-        return sendError(res, 400, `Estado no válido. Permitidos: ${EVENT_STATUSES.join(', ')}`);
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'estado', reason: `Estado no válido. Permitidos: ${EVENT_STATUSES.join(', ')}` });
       }
 
       const nuevoEvento = await EventoModel.create({
@@ -110,7 +110,7 @@ export const EventoController = {
       return sendSuccess(res, 201, 'Evento registrado exitosamente', nuevoEvento);
     } catch (error) {
       console.error('Error en EventoController.create:', error);
-      return sendError(res, 500, 'Error al registrar evento');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -123,13 +123,13 @@ export const EventoController = {
       const eventoExistente = await EventoModel.findById(id);
 
       if (!eventoExistente) {
-        return sendError(res, 404, `Evento con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       // Restricción de propiedad
       if (req.user.rol === 'cliente') {
         if (Number(eventoExistente.id_cliente) !== Number(req.user.id_cliente)) {
-          return sendError(res, 403, 'Acceso denegado: No puede modificar eventos de otros clientes');
+          return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
         }
       }
 
@@ -141,7 +141,7 @@ export const EventoController = {
         id_cliente = eventoExistente.id_cliente;
         // Solo puede mantener el estado o cancelar su solicitud
         if (estado && estado !== 'cancelado' && estado !== eventoExistente.estado) {
-          return sendError(res, 403, 'Los clientes no pueden modificar el estado administrativo del evento directamente (solo cancelarlo)');
+          return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN', { detail: 'Los clientes no pueden modificar el estado administrativo directamente' });
         }
         estado = estado || eventoExistente.estado;
       } else {
@@ -152,13 +152,13 @@ export const EventoController = {
         if (Number(id_cliente) !== Number(eventoExistente.id_cliente)) {
           const cliente = await ClienteModel.findById(id_cliente);
           if (!cliente) {
-            return sendError(res, 404, `El nuevo cliente con ID ${id_cliente} no existe`);
+            return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND', { detail: `El cliente con ID ${id_cliente} no existe` });
           }
         }
       }
 
       if (!EVENT_STATUSES.includes(estado)) {
-        return sendError(res, 400, `Estado no válido. Permitidos: ${EVENT_STATUSES.join(', ')}`);
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'estado', reason: `Estado no válido. Permitidos: ${EVENT_STATUSES.join(', ')}` });
       }
 
       const finalNombre = nombre ? nombre.trim() : eventoExistente.nombre;
@@ -167,7 +167,7 @@ export const EventoController = {
       const finalUbicacion = ubicacion ? ubicacion.trim() : eventoExistente.ubicacion;
 
       if (fecha_evento && !isValidDate(fecha_evento)) {
-        return sendError(res, 400, 'La fecha del evento debe ser una fecha válida');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'fecha_evento', reason: 'La fecha del evento debe ser una fecha válida' });
       }
 
       const eventoActualizado = await EventoModel.update(id, {
@@ -182,7 +182,7 @@ export const EventoController = {
       return sendSuccess(res, 200, 'Evento actualizado correctamente', eventoActualizado);
     } catch (error) {
       console.error('Error en EventoController.update:', error);
-      return sendError(res, 500, 'Error al actualizar evento');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -194,12 +194,12 @@ export const EventoController = {
       const { id } = req.params;
 
       if (req.user.rol === 'cliente') {
-        return sendError(res, 403, 'Acceso denegado: Los clientes no tienen permisos para eliminar registros de eventos');
+        return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
       }
 
       const evento = await EventoModel.findById(id);
       if (!evento) {
-        return sendError(res, 404, `Evento con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       // Comprobar detalles dependientes
@@ -208,7 +208,9 @@ export const EventoController = {
         return sendError(
           res,
           409,
-          `No se puede eliminar el evento porque tiene ${totalDetalles} servicio(s) desglosado(s) en su detalle. Elimine los detalles de evento primero.`
+          'No se puede completar la operación porque existe una dependencia o conflicto.',
+          'CONFLICT',
+          { reason: `El evento tiene ${totalDetalles} servicio(s) desglosado(s) en su detalle.` }
         );
       }
 
@@ -216,8 +218,7 @@ export const EventoController = {
       return sendSuccess(res, 200, `Evento con ID ${id} eliminado correctamente`);
     } catch (error) {
       console.error('Error en EventoController.delete:', error);
-      return sendError(res, 500, 'Error al eliminar evento');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   }
 };
-

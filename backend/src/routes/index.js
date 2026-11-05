@@ -6,6 +6,7 @@ import servicioRoutes from './servicioRoutes.js';
 import eventoRoutes from './eventoRoutes.js';
 import detalleEventoRoutes from './detalleEventoRoutes.js';
 import usuarioRoutes from './usuarioRoutes.js';
+import scheduleRoutes from './scheduleRoutes.js';
 
 const router = Router();
 
@@ -14,7 +15,8 @@ router.get('/health', (req, res) => {
   res.json({
     status: 'online',
     system: 'NexoEventos API',
-    version: '1.0.0',
+    version: '2.0.0',
+    timezone: 'America/Costa_Rica',
     timestamp: new Date().toISOString()
   });
 });
@@ -27,6 +29,6 @@ router.use('/servicios', servicioRoutes);
 router.use('/eventos', eventoRoutes);
 router.use('/detalle-eventos', detalleEventoRoutes);
 router.use('/usuarios', usuarioRoutes);
+router.use('/schedules', scheduleRoutes);
 
 export default router;
-

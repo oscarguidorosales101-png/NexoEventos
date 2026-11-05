@@ -14,7 +14,7 @@ export const ServicioController = {
       return sendSuccess(res, 200, 'Listado de servicios obtenido', servicios);
     } catch (error) {
       console.error('Error en ServicioController.getAll:', error);
-      return sendError(res, 500, 'Error al obtener servicios');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -27,18 +27,18 @@ export const ServicioController = {
       const servicio = await ServicioModel.findById(id);
 
       if (!servicio) {
-        return sendError(res, 404, `Servicio con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       // Si es cliente y el servicio está inactivo, no permitir consulta
       if (req.user && req.user.rol === 'cliente' && servicio.estado === 'inactivo') {
-        return sendError(res, 404, 'Servicio no disponible');
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       return sendSuccess(res, 200, 'Servicio encontrado', servicio);
     } catch (error) {
       console.error('Error en ServicioController.getById:', error);
-      return sendError(res, 500, 'Error al obtener servicio');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -48,21 +48,21 @@ export const ServicioController = {
   async create(req, res) {
     try {
       if (req.user.rol === 'cliente') {
-        return sendError(res, 403, 'Acceso denegado: Los clientes no tienen permisos para crear servicios');
+        return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
       }
 
       const { nombre, descripcion, precio, estado = 'activo' } = req.body;
 
       if (!nombre || !nombre.trim()) {
-        return sendError(res, 400, 'El nombre del servicio es obligatorio');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'nombre', reason: 'El nombre del servicio es obligatorio' });
       }
 
       if (precio === undefined || !isNonNegativeNumber(precio)) {
-        return sendError(res, 400, 'El precio debe ser un número mayor o igual a 0');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'precio', reason: 'El precio debe ser un número mayor o igual a 0' });
       }
 
       if (!SERVICE_STATUSES.includes(estado)) {
-        return sendError(res, 400, `El estado debe ser: ${SERVICE_STATUSES.join(', ')}`);
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'estado', reason: `El estado debe ser: ${SERVICE_STATUSES.join(', ')}` });
       }
 
       const nuevoServicio = await ServicioModel.create({
@@ -75,7 +75,7 @@ export const ServicioController = {
       return sendSuccess(res, 201, 'Servicio creado exitosamente', nuevoServicio);
     } catch (error) {
       console.error('Error en ServicioController.create:', error);
-      return sendError(res, 500, 'Error al registrar servicio');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -85,31 +85,31 @@ export const ServicioController = {
   async update(req, res) {
     try {
       if (req.user.rol === 'cliente') {
-        return sendError(res, 403, 'Acceso denegado: Los clientes no tienen permisos para modificar servicios');
+        return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
       }
 
       const { id } = req.params;
       const servicioExistente = await ServicioModel.findById(id);
 
       if (!servicioExistente) {
-        return sendError(res, 404, `Servicio con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       const { nombre, descripcion, precio, estado } = req.body;
 
       const finalNombre = nombre ? nombre.trim() : servicioExistente.nombre;
       if (!finalNombre) {
-        return sendError(res, 400, 'El nombre no puede quedar vacío');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'nombre', reason: 'El nombre no puede quedar vacío' });
       }
 
       const finalPrecio = precio !== undefined ? Number(precio) : Number(servicioExistente.precio);
       if (!isNonNegativeNumber(finalPrecio)) {
-        return sendError(res, 400, 'El precio debe ser un número mayor o igual a 0');
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'precio', reason: 'El precio debe ser un número mayor o igual a 0' });
       }
 
       const finalEstado = estado || servicioExistente.estado;
       if (!SERVICE_STATUSES.includes(finalEstado)) {
-        return sendError(res, 400, `Estado no válido. Permitidos: ${SERVICE_STATUSES.join(', ')}`);
+        return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', { field: 'estado', reason: `Estado no válido. Permitidos: ${SERVICE_STATUSES.join(', ')}` });
       }
 
       const servicioActualizado = await ServicioModel.update(id, {
@@ -122,7 +122,7 @@ export const ServicioController = {
       return sendSuccess(res, 200, 'Servicio actualizado correctamente', servicioActualizado);
     } catch (error) {
       console.error('Error en ServicioController.update:', error);
-      return sendError(res, 500, 'Error al actualizar servicio');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
 
@@ -132,14 +132,14 @@ export const ServicioController = {
   async delete(req, res) {
     try {
       if (req.user.rol === 'cliente') {
-        return sendError(res, 403, 'Acceso denegado: Los clientes no tienen permisos para eliminar servicios');
+        return sendError(res, 403, 'No tienes permisos para realizar esta operación.', 'FORBIDDEN');
       }
 
       const { id } = req.params;
       const servicio = await ServicioModel.findById(id);
 
       if (!servicio) {
-        return sendError(res, 404, `Servicio con ID ${id} no encontrado`);
+        return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND');
       }
 
       // Comprobar dependencias en detalle_eventos
@@ -148,7 +148,9 @@ export const ServicioController = {
         return sendError(
           res,
           409,
-          `No se puede eliminar el servicio porque está contratado en ${totalDetalles} detalle(s) de evento. Se recomienda desactivarlo cambiando su estado a 'inactivo'.`
+          'No se puede completar la operación porque existe una dependencia o conflicto.',
+          'CONFLICT',
+          { reason: `El servicio está contratado en ${totalDetalles} detalle(s) de evento.` }
         );
       }
 
@@ -156,8 +158,7 @@ export const ServicioController = {
       return sendSuccess(res, 200, `Servicio con ID ${id} eliminado correctamente`);
     } catch (error) {
       console.error('Error en ServicioController.delete:', error);
-      return sendError(res, 500, 'Error al eliminar servicio');
+      return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   }
 };
-
