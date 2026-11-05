@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { LogOut, User, Sparkles } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { LogoutModal } from './LogoutModal.jsx';
 
 export const Navbar = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleConfirmLogout = () => {
+    setShowLogoutModal(false);
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <header style={{
@@ -73,7 +82,7 @@ export const Navbar = () => {
         </Link>
 
         <button 
-          onClick={logout}
+          onClick={() => setShowLogoutModal(true)}
           className="btn btn-secondary btn-sm"
           title="Cerrar sesión"
           style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
@@ -82,6 +91,13 @@ export const Navbar = () => {
           <span>Salir</span>
         </button>
       </div>
+
+      {/* Modal de Confirmación de Cierre de Sesión */}
+      <LogoutModal 
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleConfirmLogout}
+      />
     </header>
   );
 };

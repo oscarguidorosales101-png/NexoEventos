@@ -5,18 +5,19 @@ export const EventoModel = {
     let sql = `
       SELECT e.id_evento, e.id_cliente, e.nombre, e.tipo_evento, e.fecha_evento, e.ubicacion, e.estado,
              c.nombre AS nombre_cliente, c.tipo_cliente, c.correo AS correo_cliente, c.telefono AS telefono_cliente,
-             COALESCE(SUM(de.cantidad * de.precio_unitario), 0) AS total_presupuesto,
-             COUNT(de.id_detalle) AS total_servicios
+             COALESCE((SELECT SUM(de.cantidad * de.precio_unitario) FROM detalle_eventos de WHERE de.id_evento = e.id_evento), 0) AS total_presupuesto,
+             COALESCE((SELECT COUNT(de.id_detalle) FROM detalle_eventos de WHERE de.id_evento = e.id_evento), 0) AS total_servicios,
+             (SELECT ag.id_agenda FROM agendas ag WHERE ag.id_evento = e.id_evento AND ag.id_categoria = 1 LIMIT 1) AS id_agenda_principal,
+             CASE WHEN (SELECT ag.id_agenda FROM agendas ag WHERE ag.id_evento = e.id_evento AND ag.id_categoria = 1 LIMIT 1) IS NOT NULL THEN TRUE ELSE FALSE END AS tiene_agenda_principal
       FROM eventos e
       INNER JOIN clientes c ON e.id_cliente = c.id_cliente
-      LEFT JOIN detalle_eventos de ON e.id_evento = de.id_evento
     `;
     const params = [];
     if (id_cliente !== null && id_cliente !== undefined) {
       sql += ' WHERE e.id_cliente = ?';
       params.push(id_cliente);
     }
-    sql += ' GROUP BY e.id_evento ORDER BY e.fecha_evento DESC, e.id_evento DESC';
+    sql += ' ORDER BY e.fecha_evento DESC, e.id_evento DESC';
     const [rows] = await pool.query(sql, params);
     return rows;
   },
@@ -25,13 +26,13 @@ export const EventoModel = {
     const [rows] = await pool.query(
       `SELECT e.id_evento, e.id_cliente, e.nombre, e.tipo_evento, e.fecha_evento, e.ubicacion, e.estado,
               c.nombre AS nombre_cliente, c.tipo_cliente, c.correo AS correo_cliente, c.telefono AS telefono_cliente,
-              COALESCE(SUM(de.cantidad * de.precio_unitario), 0) AS total_presupuesto,
-              COUNT(de.id_detalle) AS total_servicios
+              COALESCE((SELECT SUM(de.cantidad * de.precio_unitario) FROM detalle_eventos de WHERE de.id_evento = e.id_evento), 0) AS total_presupuesto,
+              COALESCE((SELECT COUNT(de.id_detalle) FROM detalle_eventos de WHERE de.id_evento = e.id_evento), 0) AS total_servicios,
+              (SELECT ag.id_agenda FROM agendas ag WHERE ag.id_evento = e.id_evento AND ag.id_categoria = 1 LIMIT 1) AS id_agenda_principal,
+              CASE WHEN (SELECT ag.id_agenda FROM agendas ag WHERE ag.id_evento = e.id_evento AND ag.id_categoria = 1 LIMIT 1) IS NOT NULL THEN TRUE ELSE FALSE END AS tiene_agenda_principal
        FROM eventos e
        INNER JOIN clientes c ON e.id_cliente = c.id_cliente
-       LEFT JOIN detalle_eventos de ON e.id_evento = de.id_evento
-       WHERE e.id_evento = ?
-       GROUP BY e.id_evento`,
+       WHERE e.id_evento = ?`,
       [id_evento]
     );
     return rows[0] || null;

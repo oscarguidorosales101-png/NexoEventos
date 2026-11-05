@@ -248,107 +248,107 @@ Se ejecutó la suite completa con 69 escenarios automatizados en `backend/src/sc
 
 ```text
 ======================================================
-🧪 SUITE DE PRUEBAS AUTOMATIZADAS - API NEXOEVENTOS
-📡 URL Objetivo: http://localhost:5000/api
+ SUITE DE PRUEBAS AUTOMATIZADAS - API NEXOEVENTOS
+ URL Objetivo: http://localhost:5000/api
 ======================================================
 
 --- 1. Health Check & Estado Inicial ---
-  ✅ [PASS] Health check responde 200 OK
+   [PASS] Health check responde 200 OK
 
 --- 2. Verificación de Seguridad y Rutas sin Token (401) ---
-  ✅ [PASS] GET /servicios sin token responde 401 Unauthorized
-  ✅ [PASS] GET /eventos sin token responde 401 Unauthorized
-  ✅ [PASS] GET /auth/me sin token responde 401 Unauthorized
-  ✅ [PASS] GET /roles sin token responde 401 Unauthorized
-  ✅ [PASS] GET /servicios con token inválido responde 401 Unauthorized
+   [PASS] GET /servicios sin token responde 401 Unauthorized
+   [PASS] GET /eventos sin token responde 401 Unauthorized
+   [PASS] GET /auth/me sin token responde 401 Unauthorized
+   [PASS] GET /roles sin token responde 401 Unauthorized
+   [PASS] GET /servicios con token inválido responde 401 Unauthorized
 
 --- 3. Registro y Login de Usuarios ---
-  ✅ [PASS] Registro con contraseña < 8 caracteres responde 400 Bad Request
-  ✅ [PASS] Registro con correo inválido responde 400 Bad Request
-  ✅ [PASS] Registro exitoso responde 201 Created con rol cliente
-  ✅ [PASS] Registro con correo duplicado responde 400 Bad Request
-  ✅ [PASS] Login con contraseña incorrecta responde 401 Unauthorized
-  ✅ [PASS] Login Administrador exitoso (200 OK con JWT)
-  ✅ [PASS] Login Supervisor exitoso (200 OK con JWT)
-  ✅ [PASS] Login Cliente exitoso (200 OK con JWT)
+   [PASS] Registro con contraseña < 8 caracteres responde 400 Bad Request
+   [PASS] Registro con correo inválido responde 400 Bad Request
+   [PASS] Registro exitoso responde 201 Created con rol cliente
+   [PASS] Registro con correo duplicado responde 400 Bad Request
+   [PASS] Login con contraseña incorrecta responde 401 Unauthorized
+   [PASS] Login Administrador exitoso (200 OK con JWT)
+   [PASS] Login Supervisor exitoso (200 OK con JWT)
+   [PASS] Login Cliente exitoso (200 OK con JWT)
 
 --- 4. Perfil Actual (/api/auth/me) ---
-  ✅ [PASS] GET /auth/me de Administrador retorna rol y datos seguros
-  ✅ [PASS] GET /auth/me nunca expone contraseñas ni hashes
+   [PASS] GET /auth/me de Administrador retorna rol y datos seguros
+   [PASS] GET /auth/me nunca expone contraseñas ni hashes
 
 --- 5. Autorización por Roles (RBAC y 403 Forbidden) ---
-  ✅ [PASS] Cliente intentando acceder a /roles responde 403 Forbidden
-  ✅ [PASS] Supervisor intentando acceder a /roles responde 403 Forbidden
-  ✅ [PASS] Supervisor intentando crear usuario responde 403 Forbidden
-  ✅ [PASS] Cliente intentando crear servicio responde 403 Forbidden
+   [PASS] Cliente intentando acceder a /roles responde 403 Forbidden
+   [PASS] Supervisor intentando acceder a /roles responde 403 Forbidden
+   [PASS] Supervisor intentando crear usuario responde 403 Forbidden
+   [PASS] Cliente intentando crear servicio responde 403 Forbidden
 
 --- 6. CRUD: ROLES ---
-  ✅ [PASS] GET /roles lista los roles del sistema
-  ✅ [PASS] GET /roles/1 consulta rol administrador
-  ✅ [PASS] POST /roles bloquea creación de roles fuera del catálogo cerrado (409 Conflict)
-  ✅ [PASS] DELETE /roles/1 bloquea eliminación de roles estructurales (409 Conflict)
+   [PASS] GET /roles lista los roles del sistema
+   [PASS] GET /roles/1 consulta rol administrador
+   [PASS] POST /roles bloquea creación de roles fuera del catálogo cerrado (409 Conflict)
+   [PASS] DELETE /roles/1 bloquea eliminación de roles estructurales (409 Conflict)
 
 --- 7. CRUD: CLIENTES ---
-  ✅ [PASS] POST /clientes crea cliente (201 Created)
-  ✅ [PASS] GET /clientes/:id obtiene cliente creado (200 OK)
-  ✅ [PASS] PUT /clientes/:id actualiza cliente (200 OK)
-  ✅ [PASS] DELETE /clientes/1 con eventos asociados responde 409 Conflict
-  ✅ [PASS] DELETE /clientes/:id sin dependencias responde 200 OK
+   [PASS] POST /clientes crea cliente (201 Created)
+   [PASS] GET /clientes/:id obtiene cliente creado (200 OK)
+   [PASS] PUT /clientes/:id actualiza cliente (200 OK)
+   [PASS] DELETE /clientes/1 con eventos asociados responde 409 Conflict
+   [PASS] DELETE /clientes/:id sin dependencias responde 200 OK
 
 --- 8. CRUD: SERVICIOS ---
-  ✅ [PASS] POST /servicios crea servicio (201 Created)
-  ✅ [PASS] GET /servicios/:id obtiene servicio (200 OK)
-  ✅ [PASS] PUT /servicios/:id actualiza precio y estado (200 OK)
-  ✅ [PASS] DELETE /servicios/6 contratado en eventos responde 409 Conflict
-  ✅ [PASS] DELETE /servicios/:id sin dependencias responde 200 OK
+   [PASS] POST /servicios crea servicio (201 Created)
+   [PASS] GET /servicios/:id obtiene servicio (200 OK)
+   [PASS] PUT /servicios/:id actualiza precio y estado (200 OK)
+   [PASS] DELETE /servicios/6 contratado en eventos responde 409 Conflict
+   [PASS] DELETE /servicios/:id sin dependencias responde 200 OK
 
 --- 9. CRUD: EVENTOS & Validación de Relaciones ---
-  ✅ [PASS] POST /eventos con cliente inexistente responde 404 Not Found
-  ✅ [PASS] POST /eventos crea evento con cliente válido (201 Created)
-  ✅ [PASS] GET /eventos/:id retorna evento con datos de cliente relacionado
-  ✅ [PASS] PUT /eventos/:id actualiza ubicación y estado (200 OK)
+   [PASS] POST /eventos con cliente inexistente responde 404 Not Found
+   [PASS] POST /eventos crea evento con cliente válido (201 Created)
+   [PASS] GET /eventos/:id retorna evento con datos de cliente relacionado
+   [PASS] PUT /eventos/:id actualiza ubicación y estado (200 OK)
 
 --- 10. CRUD: DETALLE_EVENTOS & Integridad ---
-  ✅ [PASS] POST /detalle-eventos con servicio inexistente responde 404 Not Found
-  ✅ [PASS] POST /detalle-eventos guarda precio unitario pactado
-  ✅ [PASS] GET /detalle-eventos/:id calcula subtotal correctamente (2200)
-  ✅ [PASS] PUT /detalle-eventos/:id actualiza cantidad (200 OK)
-  ✅ [PASS] DELETE /eventos/:id con detalles dependientes responde 409 Conflict
-  ✅ [PASS] DELETE /detalle-eventos/:id elimina detalle (200 OK)
-  ✅ [PASS] DELETE /eventos/:id ahora que está sin detalles responde 200 OK
+   [PASS] POST /detalle-eventos con servicio inexistente responde 404 Not Found
+   [PASS] POST /detalle-eventos guarda precio unitario pactado
+   [PASS] GET /detalle-eventos/:id calcula subtotal correctamente (2200)
+   [PASS] PUT /detalle-eventos/:id actualiza cantidad (200 OK)
+   [PASS] DELETE /eventos/:id con detalles dependientes responde 409 Conflict
+   [PASS] DELETE /detalle-eventos/:id elimina detalle (200 OK)
+   [PASS] DELETE /eventos/:id ahora que está sin detalles responde 200 OK
 
 --- 11. CRUD: USUARIOS & Reglas de Protección ---
-  ✅ [PASS] POST /usuarios crea usuario administrativamente (201 Created)
-  ✅ [PASS] GET /usuarios/:id retorna usuario sin exponer password ni hash
-  ✅ [PASS] PUT /usuarios/:id actualiza usuario (200 OK)
-  ✅ [PASS] DELETE /usuarios/1 bloquea eliminación del único administrador (409 Conflict)
-  ✅ [PASS] PUT /usuarios/1 bloquea degradación del único administrador (409 Conflict)
-  ✅ [PASS] DELETE /usuarios/:id elimina usuario secundario (200 OK)
+   [PASS] POST /usuarios crea usuario administrativamente (201 Created)
+   [PASS] GET /usuarios/:id retorna usuario sin exponer password ni hash
+   [PASS] PUT /usuarios/:id actualiza usuario (200 OK)
+   [PASS] DELETE /usuarios/1 bloquea eliminación del único administrador (409 Conflict)
+   [PASS] PUT /usuarios/1 bloquea degradación del único administrador (409 Conflict)
+   [PASS] DELETE /usuarios/:id elimina usuario secundario (200 OK)
 
 --- 12. Estándar Unificado de Errores & Control de Privilegios RBAC ---
-  ✅ [PASS] Supervisor bloqueado con 403 FORBIDDEN en GET /usuarios con estructura de error unificada
-  ✅ [PASS] Supervisor bloqueado con 403 FORBIDDEN en GET /usuarios/:id
-  ✅ [PASS] Supervisor bloqueado con 403 FORBIDDEN en POST /usuarios
+   [PASS] Supervisor bloqueado con 403 FORBIDDEN en GET /usuarios con estructura de error unificada
+   [PASS] Supervisor bloqueado con 403 FORBIDDEN en GET /usuarios/:id
+   [PASS] Supervisor bloqueado con 403 FORBIDDEN en POST /usuarios
 
 --- 13. Módulo de Calendario & Agendas en Tiempo Real ---
-  ✅ [PASS] GET /schedules/categories retorna al menos las 4 categorías operativas
-  ✅ [PASS] GET /schedules/summary retorna contadores agregados por categoría
-  ✅ [PASS] GET /schedules/week calcula correctamente el rango de Lunes a Domingo (2026-11-02 a 2026-11-08)
-  ✅ [PASS] GET /schedules/day retorna actividades para la fecha solicitada
-  ✅ [PASS] POST /schedules programa nueva actividad de agenda (201 Created)
-  ✅ [PASS] POST /schedules con solapamiento de horario responde 409 CONFLICT con detalles del choque
-  ✅ [PASS] PATCH /schedules/:id/reschedule reagenda la actividad a un horario libre (200 OK)
-  ✅ [PASS] POST /schedules/:id/notes agrega nota operativa (201 Created)
-  ✅ [PASS] PATCH /schedules/notes/:idNota marca la tarea como completada (200 OK)
-  ✅ [PASS] POST /schedules/:id/team asigna integrante del personal (201 Created)
-  ✅ [PASS] DELETE /schedules/:id/team/:userId remueve integrante del personal (200 OK)
-  ✅ [PASS] DELETE /schedules/notes/:idNota elimina la nota operativa (200 OK)
-  ✅ [PASS] GET /schedules/export/ics genera archivo iCalendar estándar RFC 5545 válido
-  ✅ [PASS] Rol Cliente únicamente visualiza actividades de categoría Event asociadas a sus eventos
-  ✅ [PASS] DELETE /schedules/:id elimina actividad de prueba (200 OK)
+   [PASS] GET /schedules/categories retorna al menos las 4 categorías operativas
+   [PASS] GET /schedules/summary retorna contadores agregados por categoría
+   [PASS] GET /schedules/week calcula correctamente el rango de Lunes a Domingo (2026-11-02 a 2026-11-08)
+   [PASS] GET /schedules/day retorna actividades para la fecha solicitada
+   [PASS] POST /schedules programa nueva actividad de agenda (201 Created)
+   [PASS] POST /schedules con solapamiento de horario responde 409 CONFLICT con detalles del choque
+   [PASS] PATCH /schedules/:id/reschedule reagenda la actividad a un horario libre (200 OK)
+   [PASS] POST /schedules/:id/notes agrega nota operativa (201 Created)
+   [PASS] PATCH /schedules/notes/:idNota marca la tarea como completada (200 OK)
+   [PASS] POST /schedules/:id/team asigna integrante del personal (201 Created)
+   [PASS] DELETE /schedules/:id/team/:userId remueve integrante del personal (200 OK)
+   [PASS] DELETE /schedules/notes/:idNota elimina la nota operativa (200 OK)
+   [PASS] GET /schedules/export/ics genera archivo iCalendar estándar RFC 5545 válido
+   [PASS] Rol Cliente únicamente visualiza actividades de categoría Event asociadas a sus eventos
+   [PASS] DELETE /schedules/:id elimina actividad de prueba (200 OK)
 
 ======================================================
-📊 RESULTADO DE LA SUITE DE PRUEBAS:
+ RESULTADO DE LA SUITE DE PRUEBAS:
    Pruebas Exitosas: 69
    Pruebas Fallidas: 0
 ======================================================

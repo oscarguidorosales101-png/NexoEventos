@@ -134,15 +134,15 @@ El sistema impone una estricta barrera de privilegios tanto en frontend como en 
 
 | Módulo / Acción | Administrador | Supervisor | Cliente |
 |---|:---:|:---:|:---:|
-| **Gestión de Usuarios** | ✔ Total | ❌ **PROHIBIDO (HTTP 403)** | ❌ **PROHIBIDO (HTTP 403)** |
-| **Catálogo de Roles** | ✔ Gestión protegida | ❌ **PROHIBIDO (HTTP 403)** | ❌ **PROHIBIDO (HTTP 403)** |
-| **Clientes, Servicios y Eventos** | ✔ Total | ✔ Total | 👁 Solo sus propios eventos y servicios activos |
-| **Calendario General** | ✔ Total | ✔ Total | 👁 Solo actividades de categoría `Event` propias |
-| **Crear y Modificar Agendas** | ✔ Total | ✔ Total | ❌ Prohibido |
-| **Reagendar por Drag & Drop** | ✔ Total | ✔ Total | ❌ Prohibido |
-| **Asignar Equipo y Notas** | ✔ Total | ✔ Total | ❌ Oculto y bloqueado |
-| **Exportar iCalendar (.ics)** | ✔ Total | ✔ Total | ✔ Solo de sus eventos |
-| **Eliminar Último Administrador** | ❌ **Bloqueado (HTTP 409)** | ❌ **Bloqueado (HTTP 403)** | ❌ **Bloqueado (HTTP 403)** |
+| **Gestión de Usuarios** | Total | **PROHIBIDO (HTTP 403)** | **PROHIBIDO (HTTP 403)** |
+| **Catálogo de Roles** | Gestión protegida | **PROHIBIDO (HTTP 403)** | **PROHIBIDO (HTTP 403)** |
+| **Clientes, Servicios y Eventos** | Total | Total | Solo sus propios eventos y servicios activos |
+| **Calendario General** | Total | Total | Solo actividades de categoría `Event` propias |
+| **Crear y Modificar Agendas** | Total | Total | Prohibido |
+| **Reagendar por Drag & Drop** | Total | Total | Prohibido |
+| **Asignar Equipo y Notas** | Total | Total | Oculto y bloqueado |
+| **Exportar iCalendar (.ics)** | Total | Total | Solo de sus eventos |
+| **Eliminar Último Administrador** | **Bloqueado (HTTP 409)** | **Bloqueado (HTTP 403)** | **Bloqueado (HTTP 403)** |
 
 > **Garantía de Seguridad:** Si un supervisor intenta acceder a `/usuarios` o `/roles` ingresando la URL directamente en el navegador, el sistema no carga datos y presenta una pantalla formal de **403 — Acceso Restringido**. Cualquier llamada directa a la API `/api/usuarios` responde `403 Forbidden` con código `FORBIDDEN`.
 
@@ -263,3 +263,13 @@ La suite valida automáticamente 69 escenarios en tiempo real:
 - Asignación y desasignación de personal operativo.
 - Generación y exportación de archivos válidos **RFC 5545 iCalendar (.ics)**.
 - Aislamiento estricto de privacidad para cuentas con rol cliente.
+
+---
+
+## 11. Documentación Técnica de Auditoría y Refinamiento
+
+Para consultar los informes de verificación técnica, arquitectura y seguridad:
+- [Informe de Auditoría y Refinamiento Final](docs/auditoria-refinamiento-final.md): Reporte exhaustivo con los 15 puntos requeridos, resolución de causas de error 403, desacoplamiento de dashboards, eliminación integral de emojis y flujo comercial validado.
+- [Informe de Auditoría Integral Previa](docs/auditoria-integral-final.md): Análisis de código, endpoints y arquitectura relacional.
+- [Matriz de Cumplimiento Académico](docs/cumplimiento-academico.md): Mapeo punto por punto de requisitos técnicos y funcionales del proyecto.
+- [Investigación de Seguridad JWT y RBAC](docs/investigacion-jwt.md): Buenas prácticas y justificación de directivas de seguridad implementadas.

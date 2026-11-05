@@ -6,7 +6,7 @@ ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- 2. Usuarios Iniciales (Admin, Supervisor y Cliente asociado)
 INSERT INTO usuarios (id_usuario, id_rol, id_cliente, nombre, correo, password) VALUES
-  (1, 1, NULL, 'Administrador NexoEventos', 'admin@nexoeventos.com', '$2a$10$3FHTBbU/pzIdo7jesjvSdOIWqgz21Grv156eMpdzQM8OzH.o8/dNm'),
+  (1, 1, NULL, 'Administrador NexoEventos', 'admin@nexoeventos.com', '$2a$10$/a75nv2vtgH24dvWDwZMnO5eZ4olK19YBpfrtv14h02TjOd4PQwUu'),
   (2, 2, NULL, 'Supervisor de Operaciones', 'supervisor@nexoeventos.com', '$2a$10$wvKQmwmVA5NFNZGjPk1ynON6YvY1AMU5buS9ZHXhRbMatZMQDNwaC'),
   (3, 3, 1, 'Innova Tech - Gestor Eventos', 'cliente@empresa.com', '$2a$10$jlPpNCyNmpr1tnIRsP35/OE8Ge9GDG5guAD/kKRDDCLGRsja7JCxK')
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);

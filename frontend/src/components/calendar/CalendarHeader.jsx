@@ -1,4 +1,5 @@
 import React from 'react';
+import { CalendarDays, Download, Plus, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 export const CalendarHeader = ({
   viewMode,
@@ -19,6 +20,7 @@ export const CalendarHeader = ({
     <div className="calendar-topbar">
       <div className="calendar-title-box">
         <h1>
+          <CalendarDays size={24} style={{ color: 'var(--gold-primary)' }} />
           <span>Agenda & Calendario</span>
           <span
             className="live-pulse"
@@ -27,20 +29,23 @@ export const CalendarHeader = ({
           />
         </h1>
         <p>
-          {connected ? '● Sincronizado en tiempo real' : '○ Reconectando...'} | Zona horaria: America/Costa_Rica (UTC-6)
+          {connected ? 'Sincronizado en tiempo real' : 'Reconectando...'} | Zona horaria: America/Costa_Rica (UTC-6)
         </p>
       </div>
 
       <div className="calendar-actions-cluster">
         {/* Barra de Búsqueda */}
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Buscar actividad o lugar..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ width: '220px', padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
-        />
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <Search size={14} style={{ position: 'absolute', left: '0.65rem', color: 'var(--text-muted)' }} />
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Buscar actividad o lugar..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: '230px', padding: '0.4rem 0.75rem 0.4rem 2rem', fontSize: '0.85rem' }}
+          />
+        </div>
 
         {/* Selector de Vista: Semana | Mes | Día */}
         <div className="calendar-view-toggle">
@@ -75,7 +80,7 @@ export const CalendarHeader = ({
             onClick={onPrev}
             title="Anterior"
           >
-            ◀
+            <ChevronLeft size={16} />
           </button>
           <button
             type="button"
@@ -91,7 +96,7 @@ export const CalendarHeader = ({
             onClick={onNext}
             title="Siguiente"
           >
-            ▶
+            <ChevronRight size={16} />
           </button>
           <span className="current-range-label">{dateRangeLabel}</span>
         </div>
@@ -103,7 +108,8 @@ export const CalendarHeader = ({
           onClick={onExportICS}
           title="Exportar archivo de calendario RFC 5545 iCalendar"
         >
-          📅 Exportar .ICS
+          <Download size={14} />
+          <span>Exportar .ICS</span>
         </button>
 
         {canManage && (
@@ -112,11 +118,11 @@ export const CalendarHeader = ({
             className="btn btn-primary btn-sm"
             onClick={onNewSchedule}
           >
-            + Nueva Agenda
+            <Plus size={14} />
+            <span>Nueva Agenda</span>
           </button>
         )}
       </div>
     </div>
   );
 };
-

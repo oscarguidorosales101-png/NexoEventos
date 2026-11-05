@@ -76,8 +76,8 @@ async function runMigrations() {
       files.forEach((file) => {
         const isExecuted = executedMigrations.has(file);
         const statusText = isExecuted 
-          ? `✔ APLICADA (${executedMigrations.get(file).toISOString()})` 
-          : '○ PENDIENTE';
+          ? `[APLICADA] (${executedMigrations.get(file).toISOString()})` 
+          : '[PENDIENTE]';
         console.log(`- ${file.padEnd(35)} : ${statusText}`);
       });
       console.log('---------------------------------\n');
@@ -88,16 +88,16 @@ async function runMigrations() {
     let appliedCount = 0;
     for (const file of files) {
       if (executedMigrations.has(file)) {
-        console.log(`⏩ [SALTADA] ${file} (Ya fue ejecutada previamente)`);
+        console.log(`[OMITIDA] ${file} (Ya fue ejecutada previamente)`);
         continue;
       }
 
-      console.log(`⏳ [EJECUTANDO] ${file}...`);
+      console.log(`[EJECUTANDO] ${file}...`);
       const filePath = path.join(migrationsDir, file);
       const sql = fs.readFileSync(filePath, 'utf-8');
 
       if (!sql.trim()) {
-        console.log(`⚠ [AVISO] ${file} está vacío.`);
+        console.log(`[AVISO] ${file} está vacío.`);
         continue;
       }
 
@@ -105,10 +105,10 @@ async function runMigrations() {
       try {
         await connection.query(sql);
         await connection.query(`INSERT INTO schema_migrations (migration_name) VALUES (?)`, [file]);
-        console.log(`✅ [ÉXITO] ${file} ejecutada y registrada.`);
+        console.log(`[OK] ${file} ejecutada y registrada.`);
         appliedCount++;
       } catch (migrationErr) {
-        console.error(`\n❌ [ERROR CRÍTICO EN MIGRACIÓN] Falló el archivo: ${file}`);
+        console.error(`\n[ERROR CRITICO EN MIGRACION] Falló el archivo: ${file}`);
         console.error(`Detalle del error: ${migrationErr.message}`);
         console.error('El proceso de migraciones se ha detenido para proteger la integridad de los datos.\n');
         process.exit(1);
@@ -117,13 +117,13 @@ async function runMigrations() {
 
     console.log('====================================================');
     if (appliedCount > 0) {
-      console.log(`🎉 Se aplicaron satisfactoriamente ${appliedCount} migraciones.`);
+      console.log(`[OK] Se aplicaron satisfactoriamente ${appliedCount} migraciones.`);
     } else {
-      console.log('✨ La base de datos ya está al día. No había migraciones pendientes.');
+      console.log('[OK] La base de datos ya está al día. No había migraciones pendientes.');
     }
     console.log('====================================================');
   } catch (err) {
-    console.error('❌ Error de conexión o inicialización en MySQL:', err.message);
+    console.error('[ERROR] Error de conexión o inicialización en MySQL:', err.message);
     process.exit(1);
   } finally {
     if (connection) {

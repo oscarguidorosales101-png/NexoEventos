@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { User, Users, MapPin, CheckSquare, Clock } from 'lucide-react';
 
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8:00 AM to 20:00 (8:00 PM)
 
@@ -63,7 +64,6 @@ export const WeeklyView = ({
     try {
       const { id, start, end } = JSON.parse(rawData);
       
-      // Calcular nueva fecha_inicio
       const originalStart = new Date(start);
       const originalEnd = new Date(end);
       const durationMs = originalEnd.getTime() - originalStart.getTime();
@@ -89,7 +89,7 @@ export const WeeklyView = ({
   return (
     <div className="weekly-calendar-wrapper">
       <div className="weekly-grid">
-        {/* Fila de Encabezados de Días */}
+        {/* Fila de Encabezados de Días (Lunes a Domingo) */}
         <div className="weekly-header-row">
           <div className="weekly-corner-cell">HORA</div>
           {days.map((day) => (
@@ -125,6 +125,7 @@ export const WeeklyView = ({
                     const color = schedule.color_identificador || 'var(--gold-primary)';
                     const startStr = schedule.fecha_inicio ? schedule.fecha_inicio.substring(11, 16) : '';
                     const endStr = schedule.fecha_fin ? schedule.fecha_fin.substring(11, 16) : '';
+                    const totalIntegrantes = schedule.integrantes ? schedule.integrantes.length : (schedule.total_integrantes || 0);
 
                     return (
                       <div
@@ -134,27 +135,61 @@ export const WeeklyView = ({
                         draggable={canManage}
                         onDragStart={(e) => handleDragStart(e, schedule)}
                         onClick={() => onSelectSchedule(schedule)}
-                        title={`${schedule.titulo} (${startStr} - ${endStr})`}
+                        title={`${schedule.titulo} (${startStr} - ${endStr}) | Responsable: ${schedule.responsable_nombre || 'N/A'}`}
                       >
                         <div className="schedule-item-time">
-                          <span>{startStr} - {endStr}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                            <Clock size={10} />
+                            {startStr} - {endStr}
+                          </span>
+                          <span
+                            style={{
+                              marginLeft: 'auto',
+                              fontSize: '0.625rem',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              padding: '0.05rem 0.3rem',
+                              borderRadius: '2px',
+                              backgroundColor: 'rgba(212, 175, 55, 0.12)',
+                              color
+                            }}
+                          >
+                            {schedule.categoria_nombre}
+                          </span>
+                        </div>
+
+                        <div className="schedule-item-title">{schedule.titulo}</div>
+
+                        {/* Responsable Principal (PIC) destacado */}
+                        {schedule.responsable_nombre && (
+                          <div className="schedule-item-pic" style={{ color: 'var(--gold-light)', fontWeight: 600 }}>
+                            <User size={11} style={{ color: 'var(--gold-primary)', flexShrink: 0 }} />
+                            <span>{schedule.responsable_nombre}</span>
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem', fontSize: '0.65rem', color: 'var(--text-dim)' }}>
+                          {totalIntegrantes > 0 && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.15rem' }} title="Equipo asignado">
+                              <Users size={10} style={{ color: 'var(--accent-info)' }} />
+                              +{totalIntegrantes}
+                            </span>
+                          )}
+
                           {schedule.total_notas > 0 && (
-                            <span title="Notas operativas" style={{ marginLeft: 'auto' }}>
-                              📝 {schedule.total_notas}
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.15rem', marginLeft: totalIntegrantes > 0 ? '0' : 'auto' }} title="Notas operativas">
+                              <CheckSquare size={10} />
+                              {schedule.total_notas}
+                            </span>
+                          )}
+
+                          {schedule.ubicacion && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.15rem', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={schedule.ubicacion}>
+                              <MapPin size={10} style={{ color: 'var(--text-muted)' }} />
+                              {schedule.ubicacion}
                             </span>
                           )}
                         </div>
-                        <div className="schedule-item-title">{schedule.titulo}</div>
-                        {schedule.responsable_nombre && (
-                          <div className="schedule-item-pic">
-                            👤 {schedule.responsable_nombre}
-                          </div>
-                        )}
-                        {schedule.ubicacion && (
-                          <div className="schedule-item-pic" style={{ color: 'var(--gold-light)' }}>
-                            📍 {schedule.ubicacion}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -167,4 +202,3 @@ export const WeeklyView = ({
     </div>
   );
 };
-

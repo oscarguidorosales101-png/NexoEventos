@@ -34,13 +34,13 @@ export const globalErrorHandler = (err, req, res, next) => {
     );
   }
 
-  if (err.code === 'ER_DUP_ENTRY') {
+  if (err.code === 'ER_DUP_ENTRY' || err.code === 'ER_LOCK_DEADLOCK') {
     return sendError(
       res,
       409,
       'No se puede completar la operación porque existe una dependencia o conflicto.',
       'CONFLICT',
-      { reason: 'Entrada duplicada para campo único' }
+      { reason: err.code === 'ER_LOCK_DEADLOCK' ? 'Conflicto de concurrencia detectado (deadlock)' : 'Entrada duplicada para campo único' }
     );
   }
 

@@ -35,6 +35,10 @@ export const scheduleService = {
     return res.data || [];
   },
 
+  async getTeamCandidates() {
+    return this.getStaffCandidates();
+  },
+
   async getById(id) {
     const res = await api.get(`/schedules/${id}`);
     return res.data;
@@ -65,6 +69,16 @@ export const scheduleService = {
     return res.data || [];
   },
 
+  async addNote(id, texto) {
+    const res = await api.post(`/schedules/${id}/notes`, { texto, descripcion: texto });
+    return res.data;
+  },
+
+  async toggleNote(idNota, completada) {
+    const res = await api.patch(`/schedules/notes/${idNota}`, { completada });
+    return res.data;
+  },
+
   async createNote(id, data) {
     const res = await api.post(`/schedules/${id}/notes`, data);
     return res.data;
@@ -88,6 +102,13 @@ export const scheduleService = {
   async removeTeamMember(id, userId) {
     const res = await api.delete(`/schedules/${id}/team/${userId}`);
     return res.data;
+  },
+
+  async exportICS(params = {}) {
+    if (params && params.id_agenda) {
+      return this.downloadSingleICS(params.id_agenda);
+    }
+    return this.downloadICS(params);
   },
 
   exportICSUrl(params = {}) {

@@ -98,16 +98,6 @@ export const ScheduleController = {
       sunday.setDate(monday.getDate() + 6);
       sunday.setHours(23, 59, 59, 999);
 
-      const startDateStr = monday.toISOString().slice(0, 19).replace('T', ' ');
-      const endDateStr = sunday.toISOString().slice(0, 19).replace('T', ' ');
-
-      const schedules = await AgendaModel.findAll({
-        startDate: startDateStr,
-        endDate: endDateStr,
-        id_cliente: req.user.id_cliente,
-        role: req.user.rol.toLowerCase()
-      });
-
       // Estructurar los 7 días de lunes a domingo
       const days = [];
       for (let i = 0; i < 7; i++) {
@@ -116,11 +106,6 @@ export const ScheduleController = {
         const dateKey = d.toISOString().split('T')[0];
         const dayName = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][i];
 
-        const daySchedules = schedules.filter(s => {
-          const sDate = s.fecha_inicio.split('T')[0] || s.fecha_inicio.split(' ')[0];
-          return sDate === dateKey;
-        });
-
         days.push({
           dayOfWeek: i + 1,
           dayName,
@@ -128,13 +113,30 @@ export const ScheduleController = {
           dayNumber: d.getDate(),
           monthNumber: d.getMonth() + 1,
           year: d.getFullYear(),
-          schedules: daySchedules
+          schedules: []
+        });
+      }
+
+      const startDateStr = `${days[0].date} 00:00:00`;
+      const endDateStr = `${days[6].date} 23:59:59`;
+
+      const schedules = await AgendaModel.findAll({
+        startDate: startDateStr,
+        endDate: endDateStr,
+        id_cliente: req.user.id_cliente,
+        role: req.user.rol.toLowerCase()
+      });
+
+      for (const day of days) {
+        day.schedules = schedules.filter(s => {
+          const sDate = s.fecha_inicio.split('T')[0] || s.fecha_inicio.split(' ')[0];
+          return sDate === day.date;
         });
       }
 
       return sendSuccess(res, 200, 'Semana de lunes a domingo obtenida', {
-        startDate: startDateStr.split(' ')[0],
-        endDate: endDateStr.split(' ')[0],
+        startDate: days[0].date,
+        endDate: days[6].date,
         days
       });
     } catch (error) {
@@ -309,6 +311,38 @@ export const ScheduleController = {
         if (!evento) {
           return sendError(res, 404, 'No se encontró el recurso solicitado.', 'NOT_FOUND', { detail: `El evento comercial con ID ${id_evento} no existe` });
         }
+
+        // Regla comercial: Excluir eventos cancelados o pendientes
+        if (evento.estado === 'cancelado') {
+          return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', {
+            field: 'id_evento',
+            reason: `El evento comercial #${id_evento} se encuentra cancelado y no puede ser programado en agenda.`
+          });
+        }
+
+        if (evento.estado !== 'confirmado' && evento.estado !== 'completado') {
+          return sendError(res, 400, 'Los datos enviados no son válidos.', 'BAD_REQUEST', {
+            field: 'id_evento',
+            reason: `El evento comercial #${id_evento} está en estado '${evento.estado}'. Solo se pueden calendarizar eventos en estado 'confirmado'.`
+          });
+        }
+
+        // Si la categoría a programar es la principal (id_categoria = 1 / Event), verificar unicidad
+        if (Number(id_categoria) === 1) {
+          const existingMain = await AgendaModel.findMainScheduleByEvent(id_evento);
+          if (existingMain) {
+            return sendError(
+              res,
+              409,
+              'No se puede completar la operación porque existe una dependencia o conflicto.',
+              'CONFLICT',
+              {
+                field: 'id_evento',
+                reason: `El evento comercial #${id_evento} ya tiene una agenda principal programada (#${existingMain.id_agenda} - ${existingMain.titulo}).`
+              }
+            );
+          }
+        }
       }
 
       // Comprobar detección de colisiones / conflictos de agenda
@@ -353,6 +387,15 @@ export const ScheduleController = {
       return sendSuccess(res, 201, 'Agenda creada exitosamente', nuevaAgenda);
     } catch (error) {
       console.error('Error en ScheduleController.create:', error);
+      if (error.statusCode === 409 || error.code === 'ER_DUP_ENTRY' || error.code === 'ER_LOCK_DEADLOCK') {
+        return sendError(
+          res,
+          409,
+          'No se puede completar la operación porque existe una dependencia o conflicto.',
+          'CONFLICT',
+          { reason: error.message || 'Conflicto de duplicidad o concurrencia detectado' }
+        );
+      }
       return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },
@@ -422,6 +465,26 @@ export const ScheduleController = {
         }
       }
 
+      // Validar unicidad si se actualiza a categoría principal vinculada a evento
+      const targetEvento = id_evento !== undefined ? (id_evento ? Number(id_evento) : null) : agendaExistente.id_evento;
+      const targetCat = id_categoria !== undefined ? Number(id_categoria) : agendaExistente.id_categoria;
+
+      if (targetCat === 1 && targetEvento) {
+        const existingMain = await AgendaModel.findMainScheduleByEvent(targetEvento);
+        if (existingMain && Number(existingMain.id_agenda) !== Number(id)) {
+          return sendError(
+            res,
+            409,
+            'No se puede completar la operación porque existe una dependencia o conflicto.',
+            'CONFLICT',
+            {
+              field: 'id_evento',
+              reason: `El evento comercial #${targetEvento} ya tiene una agenda principal programada (#${existingMain.id_agenda} - ${existingMain.titulo}).`
+            }
+          );
+        }
+      }
+
       const agendaActualizada = await AgendaModel.update(id, req.body);
 
       // Emitir actualización en tiempo real
@@ -430,6 +493,15 @@ export const ScheduleController = {
       return sendSuccess(res, 200, 'Agenda actualizada correctamente', agendaActualizada);
     } catch (error) {
       console.error('Error en ScheduleController.update:', error);
+      if (error.statusCode === 409 || error.code === 'ER_DUP_ENTRY' || error.code === 'ER_LOCK_DEADLOCK') {
+        return sendError(
+          res,
+          409,
+          'No se puede completar la operación porque existe una dependencia o conflicto.',
+          'CONFLICT',
+          { reason: error.message || 'Conflicto de duplicidad o concurrencia detectado' }
+        );
+      }
       return sendError(res, 500, 'Ocurrió un error interno. Inténtalo nuevamente.', 'INTERNAL_ERROR');
     }
   },

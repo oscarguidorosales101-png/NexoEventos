@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService.js';
+import { disconnectSocket } from '../services/socket.js';
 
 const AuthContext = createContext(null);
 
@@ -54,10 +55,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    disconnectSocket();
     setToken(null);
     setUser(null);
     localStorage.removeItem('nexoeventos_token');
     localStorage.removeItem('nexoeventos_user');
+    sessionStorage.clear();
   };
 
   const refreshUser = async () => {

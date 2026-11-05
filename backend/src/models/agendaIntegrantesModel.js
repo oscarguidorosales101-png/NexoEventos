@@ -4,7 +4,7 @@ export const AgendaIntegrantesModel = {
   async findByAgenda(id_agenda) {
     const [rows] = await pool.query(
       `SELECT ai.id_agenda, ai.id_usuario, ai.fecha_asignacion,
-              u.nombre, u.correo, r.nombre AS rol
+              u.nombre, u.correo, r.nombre AS rol, r.nombre AS rol_nombre
        FROM agenda_integrantes ai
        INNER JOIN usuarios u ON ai.id_usuario = u.id_usuario
        INNER JOIN roles r ON u.id_rol = r.id_rol
@@ -40,7 +40,7 @@ export const AgendaIntegrantesModel = {
    */
   async getStaffCandidates() {
     const [rows] = await pool.query(
-      `SELECT u.id_usuario, u.nombre, u.correo, r.nombre AS rol
+      `SELECT u.id_usuario, u.nombre, u.correo, r.nombre AS rol, r.nombre AS rol_nombre
        FROM usuarios u
        INNER JOIN roles r ON u.id_rol = r.id_rol
        WHERE LOWER(r.nombre) IN ('administrador', 'supervisor')

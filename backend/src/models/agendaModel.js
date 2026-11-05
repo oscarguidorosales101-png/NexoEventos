@@ -191,6 +191,21 @@ export const AgendaModel = {
   },
 
   /**
+   * Buscar agenda principal (categoría 'Event', id_categoria = 1) para un evento comercial
+   */
+  async findMainScheduleByEvent(id_evento) {
+    if (!id_evento) return null;
+    const [rows] = await pool.query(
+      `SELECT a.id_agenda, a.titulo, a.fecha_inicio, a.fecha_fin, a.id_categoria, a.id_evento
+       FROM agendas a
+       WHERE a.id_evento = ? AND a.id_categoria = 1
+       LIMIT 1`,
+      [Number(id_evento)]
+    );
+    return rows[0] || null;
+  },
+
+  /**
    * Crear nueva agenda en base de datos
    */
   async create({
@@ -209,6 +224,22 @@ export const AgendaModel = {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
+
+      // Bloqueo pesimista concurrente para garantizar que un evento solo tenga 1 agenda principal
+      if (Number(id_categoria) === 1 && id_evento) {
+        const [existing] = await connection.query(
+          `SELECT id_agenda, titulo FROM agendas 
+           WHERE id_evento = ? AND id_categoria = 1 
+           FOR UPDATE`,
+          [Number(id_evento)]
+        );
+        if (existing.length > 0) {
+          const conflictErr = new Error(`El evento comercial ya cuenta con una agenda principal programada (#${existing[0].id_agenda} - ${existing[0].titulo}).`);
+          conflictErr.code = 'ER_DUP_ENTRY';
+          conflictErr.statusCode = 409;
+          throw conflictErr;
+        }
+      }
 
       const [result] = await connection.query(
         `INSERT INTO agendas (id_categoria, id_evento, id_responsable, titulo, descripcion, fecha_inicio, fecha_fin, ubicacion, imagen_portada, estado)

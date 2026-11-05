@@ -25,15 +25,15 @@ export const getSocket = () => {
     });
 
     socket.on('connect', () => {
-      console.log('⚡ Conexión Socket.IO establecida con NexoEventos [ID:', socket.id, ']');
+      console.log('[SOCKET] Conexión Socket.IO establecida con NexoEventos [ID:', socket.id, ']');
     });
 
     socket.on('connect_error', (err) => {
-      console.warn('⚠️ Error de conexión Socket.IO:', err.message);
+      console.warn('[SOCKET] Error de conexión Socket.IO:', err.message);
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('🔌 Conexión Socket.IO cerrada:', reason);
+      console.log('[SOCKET] Conexión Socket.IO cerrada:', reason);
     });
   }
 

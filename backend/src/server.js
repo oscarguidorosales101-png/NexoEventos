@@ -26,21 +26,21 @@ async function startServer() {
     const io = initSocket(server);
 
     console.log('====================================================');
-    console.log('🚀 NEXOEVENTOS - SERVIDOR BACKEND (REST + SOCKET.IO)');
+    console.log('[NEXOEVENTOS] SERVIDOR BACKEND (REST + SOCKET.IO)');
     console.log('====================================================');
-    console.log(`🔌 Conexión MySQL establecida:`);
+    console.log(`[DB] Conexión MySQL establecida:`);
     console.log(`   - Base de datos: ${rows[0].current_db}`);
     console.log(`   - Versión MySQL: ${rows[0].version}`);
-    console.log(`⏰ Zona Horaria: America/Costa_Rica (UTC-6)`);
-    console.log(`🌐 Servidor escuchando en: http://localhost:${PORT}`);
-    console.log(`📡 Endpoints base: http://localhost:${PORT}/api`);
-    console.log(`⚡ Socket.IO habilitado para sincronización en vivo`);
+    console.log(`[CONFIG] Zona Horaria: America/Costa_Rica (UTC-6)`);
+    console.log(`[HTTP] Servidor escuchando en: http://localhost:${PORT}`);
+    console.log(`[API] Endpoints base: http://localhost:${PORT}/api`);
+    console.log(`[WS] Socket.IO habilitado para sincronización en tiempo real`);
     console.log('====================================================');
 
     server.listen(PORT);
     return server;
   } catch (error) {
-    console.error('❌ Error crítico al iniciar el servidor backend:', error.message);
+    console.error('[ERROR] Error crítico al iniciar el servidor backend:', error.message);
     process.exit(1);
   }
 }

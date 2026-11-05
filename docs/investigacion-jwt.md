@@ -237,13 +237,13 @@ En entornos de producción, el uso de HTTPS (TLS/SSL) es **mandatorio**:
 
 **Principio fundamental:** El Payload de un JWT está codificado en Base64URL, **no cifrado**. Cualquier persona que intercepte o posea el token puede decodificarlo y leer su contenido de forma inmediata.
 
-### ❌ Datos que NUNCA deben incluirse:
+### [INSEGURO] Datos que NUNCA deben incluirse:
 - Contraseñas o hashes de contraseñas (bcrypt).
 - Números de tarjetas de crédito o datos bancarios.
 - Claves privadas, secretos de APIs o tokens de servicios externos.
 - Información médica o identificaciones nacionales sensibles no requeridas para la sesión.
 
-### ✔ Datos correctos y seguros:
+### [CORRECTO] Datos correctos y seguros:
 - Identificador único del usuario (`id_usuario`).
 - Rol del usuario (`administrador`, `supervisor`, `cliente`).
 - Correo electrónico y nombre para visualización.

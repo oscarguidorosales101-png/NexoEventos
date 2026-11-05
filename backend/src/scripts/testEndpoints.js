@@ -13,10 +13,10 @@ let failedTests = 0;
 
 function assert(condition, message, details = '') {
   if (condition) {
-    console.log(`  ✅ [PASS] ${message}`);
+    console.log(`  [PASS] ${message}`);
     passedTests++;
   } else {
-    console.error(`  ❌ [FAIL] ${message} - ${details}`);
+    console.error(`  [FAIL] ${message} - ${details}`);
     failedTests++;
   }
 }
@@ -46,8 +46,8 @@ async function request(endpoint, options = {}) {
 
 async function runTests() {
   console.log('\n======================================================');
-  console.log('🧪 SUITE DE PRUEBAS AUTOMATIZADAS - API NEXOEVENTOS');
-  console.log(`📡 URL Objetivo: ${BASE_URL}`);
+  console.log('[SUITE] SUITE DE PRUEBAS AUTOMATIZADAS - API NEXOEVENTOS');
+  console.log(`[TARGET] URL Objetivo: ${BASE_URL}`);
   console.log('======================================================\n');
 
   // 1. Health check
@@ -477,27 +477,28 @@ async function runTests() {
     headers: { Authorization: `Bearer ${adminToken}` }
   });
   assert(
-    getSummary.status === 200 && typeof getSummary.data.data.total === 'number',
+    getSummary.status === 200 && typeof getSummary.data.data.all === 'number',
     'GET /schedules/summary retorna contadores agregados por categoría'
   );
 
   // 13.2 Vistas Semanal y Diaria
-  const getWeek = await request('/schedules/week?fecha=2026-11-04', {
+  const getWeek = await request('/schedules/week?date=2026-11-04', {
     headers: { Authorization: `Bearer ${adminToken}` }
   });
   assert(
     getWeek.status === 200 &&
-    getWeek.data.data.lunes === '2026-11-02' &&
-    getWeek.data.data.domingo === '2026-11-08' &&
-    Array.isArray(getWeek.data.data.agendas),
-    'GET /schedules/week calcula correctamente el rango de Lunes a Domingo (2026-11-02 a 2026-11-08)'
+    getWeek.data.data.startDate === '2026-11-02' &&
+    getWeek.data.data.endDate === '2026-11-08' &&
+    Array.isArray(getWeek.data.data.days),
+    'GET /schedules/week calcula correctamente el rango de Lunes a Domingo (2026-11-02 a 2026-11-08)',
+    JSON.stringify(getWeek.data)
   );
 
-  const getDay = await request('/schedules/day?fecha=2026-11-06', {
+  const getDay = await request('/schedules/day?date=2026-11-06', {
     headers: { Authorization: `Bearer ${adminToken}` }
   });
   assert(
-    getDay.status === 200 && Array.isArray(getDay.data.data),
+    getDay.status === 200 && Array.isArray(getDay.data.data.schedules),
     'GET /schedules/day retorna actividades para la fecha solicitada'
   );
 
@@ -563,7 +564,7 @@ async function runTests() {
   const addNote = await request(`/schedules/${newScheduleId}/notes`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${adminToken}` },
-    body: { texto: 'Verificar checklist de audio y micrófonos inalámbricos' }
+    body: { descripcion: 'Verificar checklist de audio y micrófonos inalámbricos' }
   });
   assert(
     addNote.status === 201 && addNote.data.data.id_nota,
@@ -644,8 +645,234 @@ async function runTests() {
     'DELETE /schedules/:id elimina actividad de prueba (200 OK)'
   );
 
+  // =========================================================================
+  // 14. Integridad Comercial y Protección contra Agendas Duplicadas
+  // =========================================================================
+  console.log('\n--- 14. Integridad Comercial y Regla de Agenda Principal Única ---');
+
+  // 14.1 Propiedad tiene_agenda_principal en GET /eventos
+  const eventosListRes = await request('/eventos', {
+    headers: { Authorization: `Bearer ${adminToken}` }
+  });
+  const eventHasFlag = Array.isArray(eventosListRes.data.data) && eventosListRes.data.data.some(e => 'tiene_agenda_principal' in e);
+  assert(eventHasFlag, 'GET /eventos retorna la propiedad tiene_agenda_principal para discriminar en selectores');
+
+  // Crear evento comercial de prueba en estado pendiente
+  const eventPendingRes = await request('/eventos', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: {
+      id_cliente: 1,
+      nombre: 'Lanzamiento Startup Nexo Alpha',
+      tipo_evento: 'Corporativo',
+      fecha_evento: '2026-11-25',
+      ubicacion: 'Auditorio Tech Central',
+      estado: 'pendiente'
+    }
+  });
+  const pendingEventId = eventPendingRes.data.data.id_evento;
+
+  // 14.2 Bloqueo de agenda sobre evento pendiente
+  const scheduleOnPending = await request('/schedules', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: {
+      id_categoria: 1,
+      id_evento: pendingEventId,
+      id_responsable: 1,
+      titulo: 'Actividad sobre evento pendiente',
+      fecha_inicio: '2026-11-25 09:00:00',
+      fecha_fin: '2026-11-25 12:00:00',
+      ubicacion: 'Auditorio Tech Central'
+    }
+  });
+  assert(scheduleOnPending.status === 400, 'POST /schedules bloquea calendarización de evento en estado pendiente (400 Bad Request)');
+
+  // 14.3 Bloqueo de agenda sobre evento cancelado
+  await request(`/eventos/${pendingEventId}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: { estado: 'cancelado' }
+  });
+  const scheduleOnCancelled = await request('/schedules', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: {
+      id_categoria: 1,
+      id_evento: pendingEventId,
+      id_responsable: 1,
+      titulo: 'Actividad sobre evento cancelado',
+      fecha_inicio: '2026-11-25 09:00:00',
+      fecha_fin: '2026-11-25 12:00:00',
+      ubicacion: 'Auditorio Tech Central'
+    }
+  });
+  assert(scheduleOnCancelled.status === 400, 'POST /schedules bloquea calendarización de evento en estado cancelado (400 Bad Request)');
+
+  // Aprobar el evento para dejarlo en estado confirmado
+  await request(`/eventos/${pendingEventId}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: { estado: 'confirmado' }
+  });
+
+  // 14.4 Creación exitosa de la Agenda Principal (categoría Event, id_categoria = 1)
+  const mainScheduleRes = await request('/schedules', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: {
+      id_categoria: 1,
+      id_evento: pendingEventId,
+      id_responsable: 1,
+      titulo: 'Lanzamiento Startup Nexo Alpha — Ceremonia Principal',
+      fecha_inicio: '2026-11-25 09:00:00',
+      fecha_fin: '2026-11-25 12:00:00',
+      ubicacion: 'Auditorio Tech Central'
+    }
+  });
+  const mainScheduleId = mainScheduleRes.data.data?.id_agenda;
+  assert(mainScheduleRes.status === 201 && mainScheduleId, 'POST /schedules crea agenda principal para evento confirmado (201 Created)');
+
+  // 14.5 Bloqueo estricto de duplicación de Agenda Principal (HTTP 409 Conflict)
+  const duplicateMainScheduleRes = await request('/schedules', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: {
+      id_categoria: 1,
+      id_evento: pendingEventId,
+      id_responsable: 2,
+      titulo: 'Intento de segunda agenda principal para el mismo evento',
+      fecha_inicio: '2026-11-25 14:00:00',
+      fecha_fin: '2026-11-25 17:00:00',
+      ubicacion: 'Auditorio Tech Central'
+    }
+  });
+  assert(
+    duplicateMainScheduleRes.status === 409 && duplicateMainScheduleRes.data.error?.code === 'CONFLICT',
+    'POST /schedules bloquea intento de duplicar agenda principal respondiendo 409 CONFLICT'
+  );
+
+  // 14.6 Múltiples actividades operativas secundarias permitidas para el mismo evento (Reuniones / Montajes)
+  const secondaryActivityRes = await request('/schedules', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: {
+      id_categoria: 2, // Meeting
+      id_evento: pendingEventId,
+      id_responsable: 2,
+      titulo: 'Reunión de Coordinación Logística para Lanzamiento Alpha',
+      fecha_inicio: '2026-11-24 10:00:00',
+      fecha_fin: '2026-11-24 11:30:00',
+      ubicacion: 'Sala de Juntas B'
+    }
+  });
+  const secondaryActivityId = secondaryActivityRes.data.data?.id_agenda;
+  assert(secondaryActivityRes.status === 201 && secondaryActivityId, 'POST /schedules permite múltiples actividades operativas (Meeting) para el mismo evento (201 Created)');
+
+  // 14.7 Simulación de concurrencia: solicitudes simultáneas para programar agenda principal
+  const eventConcurrent = await request('/eventos', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: {
+      id_cliente: 1,
+      nombre: 'Evento Prueba de Concurrencia Nexo',
+      tipo_evento: 'Corporativo',
+      fecha_evento: '2026-11-27',
+      ubicacion: 'Salón Concurrente',
+      estado: 'confirmado'
+    }
+  });
+  const concEventId = eventConcurrent.data.data?.id_evento;
+
+  // Lanzar dos peticiones en paralelo para la misma agenda principal
+  const [conc1, conc2] = await Promise.all([
+    request('/schedules', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: {
+        id_categoria: 1,
+        id_evento: concEventId,
+        id_responsable: 1,
+        titulo: 'Agenda Concurrente A',
+        fecha_inicio: '2026-11-27 08:00:00',
+        fecha_fin: '2026-11-27 10:00:00',
+        ubicacion: 'Salón Concurrente'
+      }
+    }),
+    request('/schedules', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: {
+        id_categoria: 1,
+        id_evento: concEventId,
+        id_responsable: 2,
+        titulo: 'Agenda Concurrente B',
+        fecha_inicio: '2026-11-27 11:00:00',
+        fecha_fin: '2026-11-27 13:00:00',
+        ubicacion: 'Salón Concurrente'
+      }
+    })
+  ]);
+
+  const hasOneSuccess = (conc1.status === 201 && conc2.status === 409) || (conc2.status === 201 && conc1.status === 409);
+  assert(hasOneSuccess, 'Condición de carrera resuelta: de dos solicitudes simultáneas, una es 201 y la otra 409 Conflict');
+
+  // Limpieza de agendas y eventos de prueba de la sección 14
+  if (mainScheduleId) await request(`/schedules/${mainScheduleId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+  if (secondaryActivityId) await request(`/schedules/${secondaryActivityId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+  const createdConcScheduleId = conc1.status === 201 ? conc1.data.data?.id_agenda : conc2.data.data?.id_agenda;
+  if (createdConcScheduleId) await request(`/schedules/${createdConcScheduleId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+  if (pendingEventId) await request(`/eventos/${pendingEventId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+  if (concEventId) await request(`/eventos/${concEventId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+
+  // =========================================================================
+  // 15. Auditoría de Seguridad, Roles y Sincronización en Tiempo Real
+  // =========================================================================
+  console.log('\n--- 15. Seguridad, Aislamiento de Roles y Sincronización en Tiempo Real ---');
+
+  // 15.1 Acceso administrativo total a usuarios y roles
+  const adminUsersList = await request('/usuarios', { headers: { Authorization: `Bearer ${adminToken}` } });
+  const adminRolesList = await request('/roles', { headers: { Authorization: `Bearer ${adminToken}` } });
+  assert(adminUsersList.status === 200 && adminRolesList.status === 200, 'Administrador accede con 200 OK a /usuarios y /roles');
+
+  // 15.2 Bloqueo de rutas administrativas al Supervisor
+  const supRolesBlocked = await request('/roles', { headers: { Authorization: `Bearer ${supervisorToken}` } });
+  assert(supRolesBlocked.status === 403 && supRolesBlocked.data.error?.code === 'FORBIDDEN', 'Supervisor bloqueado con 403 FORBIDDEN en /roles');
+
+  // 15.3 Aislamiento de eventos entre clientes
+  const clientViewOtherEvent = await request('/eventos/1', { headers: { Authorization: `Bearer ${clientToken}` } });
+  assert(
+    clientViewOtherEvent.status === 403 || (clientViewOtherEvent.status === 200 && clientViewOtherEvent.data.data?.id_cliente === 1),
+    'Cliente restringido de acceder a información de eventos ajenos'
+  );
+
+  // 15.4 Aislamiento de datos de otros clientes
+  const clientViewOtherClient = await request('/clientes/2', { headers: { Authorization: `Bearer ${clientToken}` } });
+  assert(clientViewOtherClient.status === 403, 'Cliente bloqueado con 403 FORBIDDEN al consultar perfil de otro cliente');
+
+  // 15.5 Rechazo de token con firma adulterada
+  const tamperedTokenRes = await request('/auth/me', {
+    headers: { Authorization: `Bearer ${adminToken}TAMPERED` }
+  });
+  assert(tamperedTokenRes.status === 401 && tamperedTokenRes.data.error?.code === 'INVALID_TOKEN', 'Token con firma adulterada responde 401 INVALID_TOKEN');
+
+  // 15.6 Respuestas de error sin exposición de stack traces ni consultas SQL
+  const errNoLeak = duplicateMainScheduleRes.data;
+  const leaksDetails = JSON.stringify(errNoLeak).toLowerCase().includes('stack') ||
+                       JSON.stringify(errNoLeak).includes('SELECT ') ||
+                       JSON.stringify(errNoLeak).includes('C:\\Users');
+  assert(!leaksDetails, 'Respuestas de error unificadas no exponen stack traces, rutas locales ni consultas SQL');
+
+  // 15.7 Sincronización en tiempo real vía Socket.IO
+  const socketHandshakeRes = await fetch(`http://localhost:${process.env.PORT || 5000}/socket.io/?EIO=4&transport=polling`);
+  const socketHandshakeText = await socketHandshakeRes.text();
+  assert(
+    socketHandshakeRes.status === 200 && socketHandshakeText.includes('sid'),
+    'Servidor Socket.IO responde exitosamente al handshake en tiempo real (sid activo)'
+  );
+
   console.log('\n======================================================');
-  console.log(`📊 RESULTADO DE LA SUITE DE PRUEBAS:`);
+  console.log(`[RESUMEN] RESULTADO DE LA SUITE DE PRUEBAS:`);
   console.log(`   Pruebas Exitosas: ${passedTests}`);
   console.log(`   Pruebas Fallidas: ${failedTests}`);
   console.log('======================================================\n');
