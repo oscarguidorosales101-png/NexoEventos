@@ -1,59 +1,191 @@
-# NexoEventos — Plataforma Empresarial de Gestión de Eventos & Calendario en Tiempo Real
+# NexoEventos
+### Gestión inteligente de eventos, coordinación operativa y planificación empresarial
 
-> **Auditoría Integral, Seguridad RBAC Estricta y Módulo de Calendario en Tiempo Real**  
-> Sistema corporativo para empresas de planificación de eventos de alta gama, desarrollado con arquitectura desacoplada: API REST y Socket.IO en **Node.js + Express**, base de datos relacional en **MySQL 8.0** y cliente web interactivo en **React + Vite**.
+**Una plataforma. Cada detalle bajo control.**
 
----
+NexoEventos es una plataforma web de gestión empresarial diseñada para centralizar la administración, planificación y coordinación de eventos sociales y corporativos. Integra la gestión comercial, el control de servicios, la programación de actividades y la comunicación operativa en un único entorno digital.
 
-## 1. Propósito del Sistema
-
-**NexoEventos** es una plataforma corporativa privada diseñada para planificar, coordinar y cotizar eventos sociales y empresariales de lujo (bodas, convenciones, galas, aniversarios y lanzamientos corporativos).
-
-El sistema integra dos núcleos principales:
-1. **Núcleo de Gestión Comercial y Administrativa:**
-   - Registro y segmentación de clientes (personas naturales y corporativas).
-   - Catálogo de servicios profesionales (decoración, catering, fotografía, sonido, iluminación y producción).
-   - Planificación de eventos con ciclo de vida controlado (*pendiente*, *confirmado*, *completado*, *cancelado*).
-   - Desglose detallado de servicios con congelación de precio histórico pactado.
-   - Seguridad mediante JWT y tres roles funcionales: **administrador**, **supervisor** y **cliente**.
-2. **Módulo de Calendario & Agendas en Tiempo Real:**
-   - Vistas interactivas: **Semanal** (estricta de Lunes a Domingo, 08:00 AM - 08:00 PM), **Mensual** y **Diaria**.
-   - Sincronización bidireccional instantánea mediante **Socket.IO** (actualizaciones en vivo sin recargar).
-   - Reagendamiento inteligente por **Drag & Drop** con detección algorítmica de conflictos de horario (HTTP 409).
-   - Asignación de responsables principales (PIC) y equipos operativos auxiliares.
-   - Checklist y notas operativas interactivas con estados de completitud en tiempo real.
-   - Exportación de agendas al estándar internacional **RFC 5545 iCalendar (.ics)**.
-   - Zona horaria corporativa uniforme: **America/Costa_Rica** (UTC-6).
+Su propósito es simplificar el trabajo de las empresas organizadoras de eventos, reducir la desorganización administrativa, mejorar la coordinación de los equipos y proporcionar una visión clara de cada proyecto, desde la solicitud inicial del cliente hasta su ejecución.
 
 ---
 
-## 2. Tecnologías Empleadas
+## 1. Identidad y propósito empresarial
 
-### Backend
-- **Node.js** (v24+) y **Express 4.21** (Módulos ES6).
-- **Socket.IO 4.8** para comunicación bidireccional en tiempo real con autenticación JWT en handshake.
-- **MySQL 8.0** (Motor InnoDB, `utf8mb4_unicode_ci`, Timezone UTC-6).
-- **mysql2/promise** para manejo eficiente del pool de conexiones.
-- **bcryptjs** para hashing unidireccional de contraseñas (10 rounds de sal).
-- **jsonwebtoken** para tokens de acceso (HS256 con payload tipado y expiración).
-- **cors** y **dotenv** para configuración de entorno.
+### Nuestra visión
 
-### Frontend
-- **React 18** y **Vite 6** (JavaScript / JSX).
-- **Socket.IO Client** para suscripción a eventos en tiempo real.
-- **React Router DOM 6** para enrutamiento SPA y rutas protegidas por rol con pantalla 403 personalizada.
-- **Lucide React** para iconografía minimalista.
-- **CSS Modular Institucional** con paleta de lujo: Negro Obsidian (`#0B0D13`), Dorado Metálico (`#D4AF37`) y Blanco Puro (`#FFFFFF`).
-- Cliente HTTP centralizado con interceptor de errores unificados (`UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, etc.).
+En la organización de eventos, cada detalle importa. Una fecha mal coordinada, un servicio sin confirmar o un integrante que desconoce sus responsabilidades puede afectar toda una operación.
+
+NexoEventos nace para resolver ese problema.
+
+La plataforma transforma procesos que habitualmente se encuentran dispersos entre hojas de cálculo, mensajes, documentos y calendarios independientes en un sistema centralizado, organizado y accesible.
+
+### Problema que resuelve
+
+Las empresas dedicadas a la planificación de eventos suelen enfrentarse a dificultades como:
+
+- Información de clientes distribuida en diferentes herramientas.
+- Dificultad para controlar solicitudes, cotizaciones y confirmaciones.
+- Desorganización de fechas, horarios y actividades.
+- Falta de comunicación entre responsables y equipos operativos.
+- Conflictos de disponibilidad y asignaciones simultáneas.
+- Ausencia de seguimiento sobre tareas y responsabilidades.
+- Riesgo de pérdida de información comercial y operativa.
+
+### Nuestra solución
+
+NexoEventos proporciona un entorno centralizado que permite:
+
+- Administrar clientes y relaciones comerciales.
+- Gestionar servicios y sus respectivos precios.
+- Registrar y controlar eventos.
+- Programar agendas vinculadas a eventos comerciales.
+- Asignar responsables principales y equipos de trabajo.
+- Supervisar actividades mediante un calendario dinámico.
+- Detectar conflictos de horarios antes de confirmar una asignación.
+- Mantener actualizada la información mediante sincronización en tiempo real.
+
+### Público objetivo
+
+- Empresas organizadoras de eventos.
+- Agencias de planificación de bodas y celebraciones.
+- Productoras de eventos corporativos.
+- Empresas de convenciones y congresos.
+- Equipos de coordinación y producción.
+- Negocios especializados en servicios para eventos.
 
 ---
 
-## 3. Estructura del Proyecto
+## 2. Módulos principales
+
+### 2.1 Gestión comercial
+
+Centraliza la información de los clientes y las operaciones comerciales.
+
+Incluye:
+
+- Registro y administración de clientes particulares y empresariales.
+- Catálogo de servicios profesionales.
+- Gestión de precios y disponibilidad de servicios.
+- Registro y seguimiento de eventos.
+- Estados comerciales: pendiente, confirmado, completado y cancelado.
+- Asociación de servicios contratados a cada evento.
+- Conservación del precio histórico acordado mediante el detalle del evento.
+
+### 2.2 Calendario y planificación operativa
+
+El calendario constituye uno de los núcleos principales de NexoEventos.
+
+Permite visualizar y organizar las actividades de la empresa desde una interfaz centralizada.
+
+**Modalidades de visualización:**
+
+- Semanal: distribución de lunes a domingo, con horario operativo de 08:00 a 20:00.
+- Mensual: visualización general de actividades y compromisos.
+- Diaria: seguimiento cronológico de las actividades de una fecha determinada.
+
+**Funcionalidades:**
+
+- Creación, edición y eliminación de agendas.
+- Vinculación de agendas con eventos comerciales.
+- Asignación de responsables principales (PIC).
+- Incorporación de integrantes del equipo.
+- Reprogramación mediante Drag & Drop.
+- Detección de conflictos de disponibilidad.
+- Notas y listas de tareas operativas.
+- Indicadores de actividades por categoría.
+- Exportación de agendas mediante iCalendar (.ics).
+
+**Categorías institucionales:**
+
+| Categoría | Identificación | Uso |
+|---|---|---|
+| Event | Dorado | Actividades vinculadas a eventos comerciales |
+| Meeting | Azul | Reuniones y coordinación |
+| Setup and Rehearsal | Ámbar | Montajes, ensayos y preparación |
+| Task Deadlines | Rosa | Entregas y fechas límite |
+
+### 2.3 Sincronización en tiempo real
+
+La plataforma utiliza Socket.IO para mantener sincronizada la información entre los usuarios conectados.
+
+Cuando se crea, modifica, reprograma o elimina una actividad, los usuarios autorizados reciben las actualizaciones correspondientes sin necesidad de recargar la página.
+
+La comunicación utiliza conexiones autenticadas mediante JWT y mecanismos de segmentación para mantener la privacidad de la información.
+
+### 2.4 Control administrativo
+
+El administrador dispone de herramientas para gestionar los recursos generales de la plataforma, controlar usuarios, consultar información y supervisar las operaciones.
+
+---
+
+## 3. Arquitectura tecnológica
+
+NexoEventos utiliza una arquitectura desacoplada que separa la presentación, la lógica de negocio y la persistencia de información.
+
+```text
+                 NEXOEVENTOS
+                      |
+          +-----------+-----------+
+          |                       |
+       FRONTEND                 BACKEND
+       React                   Node.js
+       Vite                    Express
+          |                       |
+          |                  API REST
+          |                       |
+          |                  Middleware
+          |                  JWT / RBAC
+          |                       |
+          |                  Controllers
+          |                       |
+          |                    Models
+          |                       |
+          |                    MySQL
+          |                       |
+          +------ Socket.IO ------+
+                   Tiempo real
+```
+
+### Tecnologías utilizadas
+
+**Frontend**
+
+- React 18.
+- Vite 6.
+- JavaScript y JSX.
+- React Router DOM.
+- Socket.IO Client.
+- Lucide React.
+- CSS modular.
+
+**Backend**
+
+- Node.js.
+- Express 4.
+- JavaScript con módulos ES.
+- MySQL2.
+- Socket.IO 4.
+- JSON Web Token (JWT).
+- Bcryptjs.
+- Dotenv.
+
+**Base de datos**
+
+- MySQL 8.0.
+- Motor de almacenamiento InnoDB.
+- Codificación utf8mb4.
+- Relaciones mediante claves foráneas.
+- Migraciones SQL versionadas.
+
+---
+
+## 4. Estructura del proyecto
 
 ```text
 NexoEventos/
+│
 ├── backend/
-│   ├── migrations/                  # 12 Migraciones SQL ordenadas e idempotentes
+│   ├── migrations/
 │   │   ├── 001_create_roles.sql
 │   │   ├── 002_create_clientes.sql
 │   │   ├── 003_create_servicios.sql
@@ -66,242 +198,373 @@ NexoEventos/
 │   │   ├── 010_seed_calendar_categories.sql
 │   │   ├── 011_seed_initial_schedules.sql
 │   │   └── 012_prevent_duplicate_event_schedules.sql
+│   │
 │   ├── src/
-│   │   ├── config/                  # Conexión al pool MySQL (db.js)
-│   │   ├── controllers/             # Controladores REST de todas las entidades
-│   │   ├── middlewares/             # authMiddleware, roleMiddleware, errorHandler
-│   │   ├── models/                  # Capa de datos MySQL (10 modelos)
-│   │   ├── routes/                  # Rutas Express modulares
-│   │   ├── scripts/                 # Migrador automático y suite de 69 pruebas
-│   │   ├── services/                # socketService.js para WebSocket en tiempo real
-│   │   ├── utils/                   # response.js (estándar unificado), icsExporter.js
-│   │   ├── app.js                   # Configuración del servidor Express
-│   │   └── server.js                # Entrada HTTP + WebSocket
-│   ├── .env                         # Variables de entorno locales
-│   └── package.json
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middlewares/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── scripts/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   ├── app.js
+│   │   └── server.js
+│   │
+│   ├── .env.example
+│   ├── package.json
+│   └── .gitignore
+│
 ├── frontend/
 │   ├── src/
-│   │   ├── components/              # Layout, Navbar, Sidebar, Modales, Toast
-│   │   │   └── calendar/            # Header, SummaryCards, Weekly, Monthly, Daily, Drawer, Form
-│   │   ├── context/                 # AuthContext (Sesión, token, rol, permisos)
-│   │   ├── pages/                   # CalendarioPage, Dashboard, Clientes, Servicios, Eventos...
-│   │   ├── routes/                  # AppRoutes con control estricto RBAC
-│   │   ├── services/                # api.js, socket.js, scheduleService.js, etc.
-│   │   ├── styles/                  # index.css, calendar.css (diseño negro y dorado)
+│   │   ├── components/
+│   │   │   └── calendar/
+│   │   ├── context/
+│   │   ├── pages/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── styles/
 │   │   ├── App.jsx
 │   │   └── main.jsx
+│   │
 │   ├── package.json
 │   └── vite.config.js
+│
 ├── database/
-│   └── nexoeventos.sql              # Volcado consolidado DDL y DML (10 tablas)
+│   └── nexoeventos.sql
+│
 ├── docs/
-│   ├── investigacion-jwt.md         # Investigación teórica sobre JWT
-│   ├── modelo-entidad-relacion.drawio # Diagrama ERD completo (10 tablas)
-│   ├── pruebas-api.json             # Colección exportable para Postman / Thunder Client
-│   ├── cumplimiento-academico.md    # Matriz de cumplimiento
-│   └── auditoria-integral-final.md  # Informe exhaustivo de auditoría y resultados
+│   ├── investigacion-jwt.md
+│   ├── modelo-entidad-relacion.drawio
+│   ├── pruebas-api.json
+│   ├── cumplimiento-academico.md
+│   ├── auditoria-integral-final.md
+│   └── informe-depuracion-final-mysql.md
+│
+├── .gitignore
 └── README.md
 ```
 
 ---
 
-## 4. Base de Datos y Modelo Relacional (10 Tablas)
+## 5. Modelo de datos
 
-El modelo de datos se compone de 10 tablas relacionadas en MySQL 8.0:
+La base de datos está organizada en diez entidades principales.
 
-### 4.1 Entidades del Core Comercial
-1. **`roles`**: Catálogo cerrado de 3 roles (`administrador`, `supervisor`, `cliente`).
-2. **`usuarios`**: Cuentas con hash `bcrypt`, relación 1:N hacia roles y 1:1 opcional hacia clientes.
-3. **`clientes`**: Titulares de contratos (`persona` o `empresa`).
-4. **`servicios`**: Catálogo comercial de prestaciones con estado activo/inactivo.
-5. **`eventos`**: Planificación de eventos con estado y relación hacia cliente.
-6. **`detalle_eventos`**: Desglose con congelación de precio histórico pactado.
+| Tabla | Responsabilidad |
+|---|---|
+| roles | Catálogo de roles del sistema |
+| usuarios | Cuentas y datos de acceso |
+| clientes | Información de clientes particulares y empresariales |
+| servicios | Catálogo de prestaciones comerciales |
+| eventos | Registro y seguimiento de eventos |
+| detalle_eventos | Servicios asociados y precios pactados |
+| categorias_agenda | Clasificación de actividades |
+| agendas | Programación de actividades y responsables |
+| agenda_integrantes | Relación entre agendas y personal |
+| agenda_notas | Notas y tareas operativas |
 
-### 4.2 Entidades del Módulo de Calendario
-7. **`categorias_agenda`**: Catálogo de 4 categorías con colores distintivos:
-   - `Event` (`#D4AF37` — Dorado): Actividades de eventos comerciales.
-   - `Meeting` (`#3B82F6` — Azul): Reuniones de coordinación y trato con clientes.
-   - `Setup and Rehearsal` (`#F59E0B` — Ámbar): Montajes, ensayos técnicos y pruebas.
-   - `Task Deadlines` (`#EC4899` — Rosa): Hitos y fechas límite operativas.
-8. **`agendas`**: Citas y actividades con horario (`fecha_inicio`, `fecha_fin`), ubicación, categoría, responsable (PIC) y vínculo opcional al evento comercial.
-9. **`agenda_integrantes`**: Tabla asociativa N:M entre `agendas` y `usuarios` para el equipo operativo asignado.
-10. **`agenda_notas`**: Checklist y notas operativas asociadas a la agenda con marca de completitud (`completada`).
+### Integridad de los datos
 
----
+El modelo utiliza relaciones referenciales para evitar registros inconsistentes.
 
-## 5. Separación Estricta de Roles (RBAC)
+También incorpora:
 
-El sistema impone una estricta barrera de privilegios tanto en frontend como en backend:
+- Restricciones de unicidad.
+- Validaciones de relaciones.
+- Protección de registros con dependencias.
+- Control de operaciones mediante transacciones.
+- Índices para consultas frecuentes.
+- Migraciones versionadas.
 
-| Módulo / Acción | Administrador | Supervisor | Cliente |
-|---|:---:|:---:|:---:|
-| **Gestión de Usuarios** | Total | **PROHIBIDO (HTTP 403)** | **PROHIBIDO (HTTP 403)** |
-| **Catálogo de Roles** | Gestión protegida | **PROHIBIDO (HTTP 403)** | **PROHIBIDO (HTTP 403)** |
-| **Clientes, Servicios y Eventos** | Total | Total | Solo sus propios eventos y servicios activos |
-| **Calendario General** | Total | Total | Solo actividades de categoría `Event` propias |
-| **Crear y Modificar Agendas** | Total | Total | Prohibido |
-| **Reagendar por Drag & Drop** | Total | Total | Prohibido |
-| **Asignar Equipo y Notas** | Total | Total | Oculto y bloqueado |
-| **Exportar iCalendar (.ics)** | Total | Total | Solo de sus eventos |
-| **Eliminar Último Administrador** | **Bloqueado (HTTP 409)** | **Bloqueado (HTTP 403)** | **Bloqueado (HTTP 403)** |
-
-> **Garantía de Seguridad:** Si un supervisor intenta acceder a `/usuarios` o `/roles` ingresando la URL directamente en el navegador, el sistema no carga datos y presenta una pantalla formal de **403 — Acceso Restringido**. Cualquier llamada directa a la API `/api/usuarios` responde `403 Forbidden` con código `FORBIDDEN`.
+La migración 012 incorpora una restricción de unicidad condicional para impedir que un mismo evento comercial tenga varias agendas principales.
 
 ---
 
-## 6. Estándar Unificado de Errores HTTP
+## 6. Seguridad y control de acceso (RBAC)
 
-Todas las respuestas de error siguen estrictamente el esquema JSON unificado:
+NexoEventos utiliza tres roles diferenciados, cada uno con responsabilidades específicas.
 
-```json
-{
-  "success": false,
-  "message": "Mensaje legible para el usuario",
-  "error": {
-    "code": "CODIGO_ESTANDAR",
-    "message": "Descripción técnica concisa",
-    "details": {}
-  }
-}
+| Funcionalidad | Administrador | Supervisor | Cliente |
+|---|---|---|---|
+| Gestión de usuarios | Permitido | Restringido | Restringido |
+| Gestión de roles | Permitido | Restringido | Restringido |
+| Gestión comercial | Completo | Operativo | Propia información |
+| Gestión de eventos | Completo | Operativo | Propios eventos |
+| Calendario | Completo | Completo | Actividades propias permitidas |
+| Crear agendas | Permitido | Permitido | Restringido |
+| Modificar agendas | Permitido | Permitido | Restringido |
+| Asignar integrantes | Permitido | Permitido | Restringido |
+| Gestionar notas | Permitido | Permitido | Restringido |
+
+### Principios de seguridad
+
+La seguridad no depende únicamente de ocultar botones o secciones de la interfaz.
+
+Las restricciones se aplican también en el backend mediante middleware de autenticación y autorización.
+
+Se contemplan las siguientes respuestas:
+
+- **401 Unauthorized:** sesión inexistente, inválida o expirada.
+- **403 Forbidden:** usuario autenticado sin autorización.
+- **400 Bad Request:** información inválida.
+- **404 Not Found:** recurso inexistente.
+- **409 Conflict:** conflicto de integridad o de operación.
+- **500 Internal Server Error:** error interno controlado.
+
+Las contraseñas se almacenan mediante hashing y nunca deben exponerse a través de las respuestas de la API.
+
+---
+
+## 7. Configuración e instalación
+
+### Requisitos previos
+
+- Node.js y npm.
+- MySQL Server 8.0.
+- Git.
+- Un navegador moderno.
+- Dependencias de backend y frontend.
+
+### 7.1 Obtener el proyecto
+
+```bash
+git clone URL_DEL_REPOSITORIO
+cd NexoEventos
 ```
 
-### Códigos Estándar Implementados:
-- `401 Unauthorized` (`UNAUTHORIZED` / `TOKEN_EXPIRED`): `"No has iniciado sesión o tu sesión ha expirado."`
-- `403 Forbidden` (`FORBIDDEN`): `"No tienes permisos para realizar esta operación."`
-- `400 Bad Request` (`BAD_REQUEST`): Datos incompletos o tipos no válidos.
-- `404 Not Found` (`NOT_FOUND`): Recurso inexistente en base de datos.
-- `409 Conflict` (`CONFLICT`): Solapamientos de horario, violaciones de unicidad o eliminación de registros con dependencias activas.
-- `500 Internal Server Error` (`INTERNAL_ERROR`): Errores inesperados del servidor.
+### 7.2 Configurar el backend
 
----
+```bash
+cd backend
+npm install
+```
 
-## 7. Configuración e Instalación
+Crear un archivo `.env` a partir de `.env.example`.
 
-### 7.1 Configuración de Variables de Entorno
-En `backend/.env`:
-```env
+En Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Configurar las variables privadas con los datos de la instalación local:
+
+```dotenv
 PORT=5000
+
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=root
+DB_USER=USUARIO_LOCAL
+DB_PASSWORD=CONTRASENA_LOCAL
 DB_NAME=nexoeventos
-JWT_SECRET=nexoeventos_jwt_super_secret_key_production_2026_enterprise_auth_system
+
+JWT_SECRET=GENERAR_UNA_CLAVE_PRIVADA_SEGURA
 JWT_EXPIRES_IN=8h
+
 CLIENT_URL=http://localhost:5173
 TIMEZONE=America/Costa_Rica
 ```
 
-### 7.2 Instalación y Migraciones
+Los valores anteriores son una plantilla. Las credenciales reales deben permanecer exclusivamente en el archivo `.env` local.
 
-```powershell
-# Instalar dependencias del Backend
-cd NexoEventos/backend
-npm install
+### 7.3 Preparar MySQL
 
-# Ejecutar las 11 migraciones SQL
+Crear la base de datos:
+
+```sql
+CREATE DATABASE nexoeventos
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+```
+
+Ejecutar las migraciones desde el backend:
+
+```bash
 npm run migrate
+```
 
-# Instalar dependencias del Frontend
-cd ../frontend
+### 7.4 Instalar el frontend
+
+Abrir otra terminal:
+
+```bash
+cd NexoEventos/frontend
 npm install
 ```
 
 ---
 
-## 8. Ejecución del Sistema
+## 8. Puesta en marcha
 
-### Iniciar Backend (Puerto 5000)
-```powershell
-cd NexoEventos/backend
+### Backend
+
+Desde `backend/`:
+
+```bash
 npm start
-# O en modo desarrollo:
+```
+
+Servicio:
+
+```text
+http://localhost:5000
+```
+
+### Frontend
+
+Desde `frontend/`:
+
+```bash
 npm run dev
 ```
 
-### Iniciar Frontend (Puerto 5173)
-```powershell
-cd NexoEventos/frontend
-npm run dev
+Aplicación:
+
+```text
+http://localhost:5173
 ```
 
-Abra su navegador en: `http://localhost:5173`
+Ambos servicios deben estar activos para utilizar la plataforma completa.
 
 ---
 
-## 9. Credenciales de Demostración
+## 9. Validación y pruebas
 
-| Rol | Correo Electrónico | Contraseña | Alcance de Permisos |
-|---|---|---|---|
-| **Administrador** | `admin@nexoeventos.com` | `Admin1234*` | Control total, administración de usuarios, roles, agendas y eventos. |
-| **Supervisor** | `supervisor@nexoeventos.com` | `Supervisor1234*` | Control operativo de eventos, clientes, servicios y calendario. Sin acceso a usuarios ni roles. |
-| **Cliente** | `cliente@empresa.com` | `Cliente1234*` | Portal privado para solicitar eventos y consultar agenda propia. |
+La calidad del sistema se verifica mediante diferentes niveles de pruebas.
 
----
+### 9.1 API y seguridad
 
-## 10. Batería Integral de Pruebas Automatizadas
-
-El sistema cuenta con cuatro suites de pruebas automatizadas y reproducibles:
-
-### 10.1 Suite de Endpoints REST, RBAC y Concurrencia (83/83 Aprobadas)
-```powershell
-cd NexoEventos/backend
+```bash
+cd backend
 npm run test:api
 ```
-Valida 15 secciones que cubren 83 pruebas exhaustivas (100% PASS):
-- Health check y conexión a MySQL 8.0.
-- Rutas públicas vs privadas sin token (HTTP 401).
-- Cifrado seguro bcrypt y firmas JWT.
-- Aislamiento RBAC estricto (Supervisor bloqueado en `GET /usuarios`, `GET /usuarios/:id` y `POST /usuarios` con HTTP 403).
-- Bloqueo de eliminación del último administrador activo (HTTP 409).
-- CRUD completo de roles, clientes, servicios, eventos y detalle de eventos.
-- Regla de congelación de precios históricos en detalle de eventos.
-- Vistas de calendario: semanal (Lunes a Domingo), mensual y diaria.
-- Resumen y contadores agregados por categoría.
-- Detección de solapamiento de horarios (HTTP 409 Conflict) para responsable e integrantes.
-- Reagendamiento mediante Drag & Drop (`PATCH /schedules/:id/reschedule`).
-- Checklist y notas operativas (creación, toggle y eliminación).
-- Asignación y desasignación de personal operativo.
-- Generación y exportación de archivos válidos **RFC 5545 iCalendar (.ics)**.
-- Aislamiento estricto de privacidad para cuentas con rol cliente.
-- Integridad comercial: Una sola agenda principal por evento (Migración 012).
-- Simulación de concurrencia y deadlocks resueltos con HTTP 409 Conflict.
-- Handshake y sincronización en tiempo real vía Socket.IO.
 
-### 10.2 Suite de Persistencia Real en MySQL 8.0 (10 Entidades)
-```powershell
-cd NexoEventos/backend
+Resultado documentado: **84/84 pruebas aprobadas**.
+
+Comprueba autenticación, permisos, operaciones CRUD, validaciones, integridad comercial, calendario y conflictos.
+
+### 9.2 Persistencia MySQL
+
+```bash
 npm run test:persistence
 ```
-Comprueba directamente contra MySQL la persistencia, integridad referencial y eliminación de las 10 entidades: `roles`, `usuarios`, `clientes`, `servicios`, `eventos`, `detalle_eventos`, `categorias_agenda`, `agendas`, `agenda_integrantes` y `agenda_notas`.
 
-### 10.3 Flujo Comercial Completo: Evento -> Agenda
-```powershell
-cd NexoEventos/backend
+Verifica las diez entidades mediante consultas directas a MySQL, incluyendo creación, consulta, actualización y eliminación.
+
+### 9.3 Flujo comercial
+
+```bash
 npm run test:commercial
 ```
-Comprueba el ciclo de vida de un evento comercial desde su solicitud, aprobación por supervisor, calendarización principal, asignación de equipo y verificación en MySQL.
 
-### 10.4 Pruebas de Interfaz E2E con Navegador Real (Puppeteer)
-```powershell
-cd NexoEventos/frontend
+Comprueba el recorrido de una operación comercial desde la solicitud hasta su aprobación, programación y asignación de personal.
+
+### 9.4 Sincronización Socket.IO
+
+```bash
+npm run test:socket
+```
+
+Comprueba conexiones autenticadas, comunicación entre sesiones y aislamiento de salas.
+
+Resultado documentado: **17/17 aserciones aprobadas**.
+
+### 9.5 Pruebas de interfaz
+
+Desde `frontend/`:
+
+```bash
 npm run test:e2e
 ```
-Ejecuta Chromium headless interactuando con los 3 roles en el frontend en vivo (`http://localhost:5173`):
-- Login Administrador, renderizado de Dashboard, 0 pantallas negras, 0 excepciones JS.
-- Creación, edición y eliminación de eventos mediante modales y tabla interactiva.
-- Carga de vistas de calendario semanal, mensual y diaria.
-- Cierre de sesión y login como Supervisor; verificación de aislamiento de rutas administrativas.
-- Cierre de sesión y login como Cliente; verificación del Portal de Cliente y catálogo de servicios.
+
+Utiliza Puppeteer y Chromium para verificar interacciones reales en la interfaz y los tres perfiles de usuario.
+
+### 9.6 Compilación de producción
+
+Desde `frontend/`:
+
+```bash
+npm run build
+```
+
+Genera la versión optimizada de producción.
 
 ---
 
-## 11. Documentación Técnica de Auditoría y Refinamiento
+## 10. Protección de información y configuración privada
 
-Para consultar los informes de verificación técnica, arquitectura y seguridad:
-- [Informe Final de Implementación Integral](docs/auditoria-implementacion-integral-final.md): Reporte definitivo con evidencias completas de persistencia, E2E, concurrencia, RBAC y tabla de resultados reales.
-- [Informe de Auditoría y Estabilización Final](docs/auditoria-estabilizacion-final.md): Detalle técnico de la erradicación de pantallas negras, ErrorBoundary global y Migración 012.
-- [Informe de Auditoría Integral Previa](docs/auditoria-integral-final.md): Análisis de código, endpoints y arquitectura relacional.
-- [Matriz de Cumplimiento Académico](docs/cumplimiento-academico.md): Mapeo punto por punto de requisitos técnicos y funcionales del proyecto.
-- [Investigación de Seguridad JWT y RBAC](docs/investigacion-jwt.md): Buenas prácticas y justificación de directivas de seguridad implementadas.
-- [Investigación de Seguridad JWT y RBAC](docs/investigacion-jwt.md): Buenas prácticas y justificación de directivas de seguridad implementadas.
+NexoEventos separa la documentación pública de los datos internos de configuración.
+
+### Información que puede compartirse
+
+- Código fuente autorizado.
+- Arquitectura del sistema.
+- Modelo entidad-relación.
+- Migraciones SQL.
+- Documentación técnica.
+- Ejemplos de configuración sin secretos.
+- Pruebas automatizadas.
+- Datos de demostración ficticios.
+
+### Información que debe permanecer privada
+
+- Archivo `backend/.env`.
+- Contraseñas de MySQL.
+- Claves JWT.
+- Tokens de autenticación.
+- Credenciales personales.
+- Respaldos que contengan información real de clientes.
+- Datos personales y registros privados de producción.
+
+### Reglas obligatorias
+
+1. Nunca publicar archivos `.env`.
+2. Nunca incluir contraseñas reales en el README.
+3. Utilizar `.env.example` para documentar las variables necesarias.
+4. No subir respaldos con información personal o credenciales.
+5. No incluir tokens ni secretos en capturas de pantalla.
+6. Mantener las credenciales de demostración separadas de las cuentas privadas.
+
+Los profesores pueden revisar la estructura, ejecutar el proyecto y verificar su funcionamiento utilizando una configuración propia, sin necesidad de acceder a los secretos del entorno original.
+
+---
+
+## 11. Documentación complementaria
+
+La carpeta `docs/` reúne los documentos que permiten comprender y evaluar el desarrollo:
+
+| Documento | Contenido |
+|---|---|
+| `investigacion-jwt.md` | Investigación sobre autenticación y seguridad JWT |
+| `modelo-entidad-relacion.drawio` | Representación visual del modelo relacional |
+| `pruebas-api.json` | Colección de solicitudes para Postman o Thunder Client |
+| `cumplimiento-academico.md` | Correspondencia entre requisitos y funcionalidades |
+| `auditoria-integral-final.md` | Resultados de la auditoría técnica |
+| `informe-depuracion-final-mysql.md` | Evidencias de la depuración controlada |
+
+---
+
+## 12. Identidad y compromiso de NexoEventos
+
+NexoEventos representa una forma más organizada de gestionar el trabajo detrás de cada evento.
+
+No se trata solamente de almacenar clientes, registrar fechas o mostrar actividades en un calendario. Se trata de conectar personas, responsabilidades, servicios y operaciones dentro de un mismo sistema.
+
+Su enfoque está basado en tres principios:
+
+**Organización:** cada actividad, cliente y servicio debe tener información clara y centralizada.
+
+**Coordinación:** cada integrante debe conocer sus responsabilidades y los compromisos del equipo.
+
+**Confianza:** la información debe mantenerse protegida, íntegra y disponible para quienes tienen autorización.
+
+La tecnología debe facilitar el trabajo, no complicarlo.
+
+Por eso, NexoEventos busca que las empresas puedan dedicar menos tiempo a organizar información dispersa y más tiempo a ofrecer experiencias memorables.
+
+---
+
+**NexoEventos**
+
+*Cada evento tiene una historia. Nosotros ayudamos a organizar cada detalle para hacerla posible.*

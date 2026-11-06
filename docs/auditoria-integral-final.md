@@ -16,6 +16,7 @@ El presente documento formaliza los resultados de la auditoría correctiva, la r
 Se partió de la base existente desarrollada bajo los lineamientos académicos de `Mini_Proyecto_1_Dia_2.pdf`. Durante la inspección minuciosa del código fuente, base de datos y flujos de red, se detectaron y corrigieron asimetrías de autorización (privilegios excesivos del rol Supervisor), dispersión en las estructuras JSON de error HTTP y necesidad de acoplar un subsistema de sincronización bidireccional WebSocket para citas y actividades operativas.
 
 ### Logros Principales Obtenidos:
+
 1. **Auditoría y Blindaje RBAC:** Se eliminó cualquier permiso administrativo del rol Supervisor. Se restringió el acceso a `/usuarios` y `/roles` exclusivamente al rol Administrador tanto en las rutas del backend (HTTP 403 Forbidden) como en el frontend (pantalla de Acceso Restringido y exclusión del menú lateral).
 2. **Estándar Unificado de Errores HTTP:** Se implementó una respuesta JSON estructurada y predecible en todo el backend (`success: false`, `message`, `error: { code, message, details }`), con interceptores frontend en `api.js` que notifican sin degradar la sesión del usuario.
 3. **Módulo de Calendario Completo:** Se agregaron 4 tablas relacionales (`categorias_agenda`, `agendas`, `agenda_integrantes`, `agenda_notas`) mediante 3 nuevas migraciones SQL (009, 010 y 011), sumando un total de 11 migraciones registradas en `schema_migrations`.
@@ -28,13 +29,13 @@ Se partió de la base existente desarrollada bajo los lineamientos académicos d
 
 ## 2. Diagnóstico Técnico y Vulnerabilidades Corregidas
 
-| Área Evaluada | Hallazgo / Vulnerabilidad Detectada | Impacto | Corrección Aplicada |
-|---|---|---|---|
-| **Autorización RBAC** | `usuarioRoutes.js` utilizaba `requireStaff` en `GET /` y `GET /:id`, permitiendo a supervisores inspeccionar el directorio completo de usuarios y sus roles. | Fuga de información corporativa y escalamiento potencial de privilegios. | Se bloqueó todo el router `usuarioRoutes.js` exclusivamente con `requireAdmin`. Para el calendario se creó el endpoint seguro `/api/schedules/team-candidates` que expone solo datos no sensibles del staff. |
-| **Navegación Frontend** | `AppRoutes.jsx` tenía configurado `allowedRoles={['administrador', 'supervisor']}` en `/usuarios`. | Un supervisor podía ingresar por URL o ver la pantalla de usuarios. | Se corrigió a `allowedRoles={['administrador']}`. Si un supervisor intenta navegar a `/usuarios` o `/roles`, visualiza la tarjeta de `403 — Acceso Restringido`. |
-| **Formato de Errores** | Múltiples controladores retornaban estructuras dispares como `{ error: "msg" }`, `{ message: "msg" }` o `{ errors: [] }`. | Dificultad para el cliente React de tipar y mostrar errores con precisión. | Se centralizó la respuesta en `backend/src/utils/response.js` con el formato unificado `{ success, message, error: { code, message, details } }`. |
-| **Manejo de Sesión 403** | Respuestas 403 cerraban la sesión del usuario en algunas peticiones axios/fetch. | El usuario perdía su sesión legítima al toparse con una acción restringida. | Se separó estrictamente el evento `auth:unauthorized` (401 -> logout) del evento `auth:forbidden` (403 -> toast de advertencia sin cerrar sesión). |
-| **Zona Horaria** | La serialización de fechas en endpoints semanales provocaba desfase de 1 día debido al parseo implícito en UTC. | Las actividades del Lunes aparecían el Domingo o la semana calculada se desplazaba. | Se fijó la zona `America/Costa_Rica` (UTC-6) y se utilizó parseo seguro de strings sin conversión UTC en los controladores y migraciones. |
+| Área Evaluada            | Hallazgo / Vulnerabilidad Detectada                                                                                                                          | Impacto                                                                             | Corrección Aplicada                                                                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Autorización RBAC**    | `usuarioRoutes.js` utilizaba `requireStaff` en `GET /` y `GET /:id`, permitiendo a supervisores inspeccionar el directorio completo de usuarios y sus roles. | Fuga de información corporativa y escalamiento potencial de privilegios.            | Se bloqueó todo el router `usuarioRoutes.js` exclusivamente con `requireAdmin`. Para el calendario se creó el endpoint seguro `/api/schedules/team-candidates` que expone solo datos no sensibles del staff. |
+| **Navegación Frontend**  | `AppRoutes.jsx` tenía configurado `allowedRoles={['administrador', 'supervisor']}` en `/usuarios`.                                                           | Un supervisor podía ingresar por URL o ver la pantalla de usuarios.                 | Se corrigió a `allowedRoles={['administrador']}`. Si un supervisor intenta navegar a `/usuarios` o `/roles`, visualiza la tarjeta de `403 — Acceso Restringido`.                                             |
+| **Formato de Errores**   | Múltiples controladores retornaban estructuras dispares como `{ error: "msg" }`, `{ message: "msg" }` o `{ errors: [] }`.                                    | Dificultad para el cliente React de tipar y mostrar errores con precisión.          | Se centralizó la respuesta en `backend/src/utils/response.js` con el formato unificado `{ success, message, error: { code, message, details } }`.                                                            |
+| **Manejo de Sesión 403** | Respuestas 403 cerraban la sesión del usuario en algunas peticiones axios/fetch.                                                                             | El usuario perdía su sesión legítima al toparse con una acción restringida.         | Se separó estrictamente el evento `auth:unauthorized` (401 -> logout) del evento `auth:forbidden` (403 -> toast de advertencia sin cerrar sesión).                                                           |
+| **Zona Horaria**         | La serialización de fechas en endpoints semanales provocaba desfase de 1 día debido al parseo implícito en UTC.                                              | Las actividades del Lunes aparecían el Domingo o la semana calculada se desplazaba. | Se fijó la zona `America/Costa_Rica` (UTC-6) y se utilizó parseo seguro de strings sin conversión UTC en los controladores y migraciones.                                                                    |
 
 ---
 
@@ -47,13 +48,13 @@ flowchart TD
     User([Petición del Usuario]) --> AuthMiddleware{¿Token JWT Válido?}
     AuthMiddleware -- No / Expirado --> Err401[HTTP 401 Unauthorized]
     AuthMiddleware -- Sí --> CheckRole{Evaluar Rol en Token}
-    
+
     CheckRole -- Administrador --> AdminAllow[Acceso Total: Usuarios, Roles, Clientes, Servicios, Eventos, Calendario]
-    
+
     CheckRole -- Supervisor --> CheckRouteSup{¿Ruta Solicitada?}
     CheckRouteSup -- /api/usuarios o /api/roles --> Err403Sup[HTTP 403 Forbidden: Sin privilegios de administración]
     CheckRouteSup -- Clientes, Servicios, Eventos, Calendario --> SupAllow[Acceso Operativo Permitido]
-    
+
     CheckRole -- Cliente --> CheckRouteCli{¿Ruta Solicitada?}
     CheckRouteCli -- /portal-cliente o eventos propios --> CliAllow[Acceso a Recursos Propios]
     CheckRouteCli -- Calendario --> CliCal[Solo Agendas 'Event' de su id_cliente]
@@ -61,17 +62,20 @@ flowchart TD
 ```
 
 ### 3.1 Administrador (Control Total)
+
 - Acceso exclusivo al CRUD completo de usuarios (`/api/usuarios`) y catálogo de roles (`/api/roles`).
 - Gestión comercial completa: clientes, servicios, eventos y detalle de cotización.
 - Gestión de agenda: crear, modificar, reagendar (drag & drop), eliminar actividades, asignar personal y gestionar checklist de tareas.
 - Bloqueo institucional: el sistema rechaza la eliminación o degradación del último administrador activo con HTTP 409 Conflict.
 
 ### 3.2 Supervisor (Control Operativo Exclusivo)
+
 - **Autorizado:** Registrar clientes, gestionar eventos comerciales, supervisar servicios, programar actividades en el calendario, reagendar horarios, agregar notas operativas y asignar integrantes del staff.
 - **Estrictamente Prohibido:** No puede crear, ver, modificar ni eliminar usuarios. No puede alterar el catálogo de roles. Los accesos directos por navegador o API son repelidos con código HTTP 403 y pantalla de acceso denegado.
 
 ### 3.3 Cliente (Autogestión Aislada)
-- **Autorizado:** Visualizar su perfil, solicitar nuevos eventos en estado *pendiente*, consultar el desglose de servicios pactados para sus eventos y ver citas de categoría `Event` vinculadas a su cuenta.
+
+- **Autorizado:** Visualizar su perfil, solicitar nuevos eventos en estado _pendiente_, consultar el desglose de servicios pactados para sus eventos y ver citas de categoría `Event` vinculadas a su cuenta.
 - **Estrictamente Prohibido:** No puede ver eventos ni clientes ajenos. No tiene visibilidad sobre agendas internas de tipo `Meeting`, `Setup and Rehearsal` o `Task Deadlines`, ni puede acceder a integrantes del personal ni notas operativas internas.
 
 ---
@@ -81,6 +85,7 @@ flowchart TD
 Todas las respuestas del servidor cumplen con la especificación JSON:
 
 ### Éxito (HTTP 200 / 201):
+
 ```json
 {
   "success": true,
@@ -90,6 +95,7 @@ Todas las respuestas del servidor cumplen con la especificación JSON:
 ```
 
 ### Error Unificado (HTTP 400, 401, 403, 404, 409, 500):
+
 ```json
 {
   "success": false,
@@ -103,20 +109,22 @@ Todas las respuestas del servidor cumplen con la especificación JSON:
 ```
 
 ### Catálogo de Códigos de Error:
-| Código HTTP | Error Code | Mensaje Predeterminado |
-|---|---|---|
-| **400** | `BAD_REQUEST` | Los datos enviados no son válidos o están incompletos. |
-| **401** | `UNAUTHORIZED` / `TOKEN_EXPIRED` | No has iniciado sesión o tu sesión ha expirado. |
-| **403** | `FORBIDDEN` | No tienes permisos para realizar esta operación. |
-| **404** | `NOT_FOUND` | No se encontró el recurso solicitado. |
-| **409** | `CONFLICT` | No se puede completar la operación porque existe una dependencia o conflicto. |
-| **500** | `INTERNAL_ERROR` | Ocurrió un error interno. Inténtalo nuevamente. |
+
+| Código HTTP | Error Code                       | Mensaje Predeterminado                                                        |
+| ----------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| **400**     | `BAD_REQUEST`                    | Los datos enviados no son válidos o están incompletos.                        |
+| **401**     | `UNAUTHORIZED` / `TOKEN_EXPIRED` | No has iniciado sesión o tu sesión ha expirado.                               |
+| **403**     | `FORBIDDEN`                      | No tienes permisos para realizar esta operación.                              |
+| **404**     | `NOT_FOUND`                      | No se encontró el recurso solicitado.                                         |
+| **409**     | `CONFLICT`                       | No se puede completar la operación porque existe una dependencia o conflicto. |
+| **500**     | `INTERNAL_ERROR`                 | Ocurrió un error interno. Inténtalo nuevamente.                               |
 
 ---
 
 ## 5. Arquitectura del Módulo de Calendario y Agendas
 
 ### 5.1 Esquema de Base de Datos (10 Tablas)
+
 El sistema extendió su modelo relacional incorporando 4 nuevas tablas mediante migraciones versionadas:
 
 ```mermaid
@@ -126,7 +134,7 @@ erDiagram
     CLIENTES ||--o{ EVENTOS : "posee contratos"
     SERVICIOS ||--o{ DETALLE_EVENTOS : "prestación desglosada"
     EVENTOS ||--o{ DETALLE_EVENTOS : "contiene servicios"
-    
+
     CATEGORIAS_AGENDA ||--o{ AGENDAS : "clasifica tipo"
     EVENTOS ||--o{ AGENDAS : "evento comercial vinculado"
     USUARIOS ||--o{ AGENDAS : "responsable PIC"
@@ -137,6 +145,7 @@ erDiagram
 ```
 
 ### 5.2 Catálogo de Categorías y Colores
+
 1. **`Event` (`#D4AF37` - Dorado):** Actividades de ejecución del evento con clientes e invitados.
 2. **`Meeting` (`#3B82F6` - Azul):** Sesiones de alineación con proveedores y juntas de coordinación.
 3. **`Setup and Rehearsal` (`#F59E0B` - Ámbar):** Montaje técnico, pruebas de sonido, iluminación y ensayos.
@@ -149,10 +158,12 @@ erDiagram
 Para evitar sobre-asignación de personal o solapamiento físico en el mismo espacio, el sistema ejecuta una verificación previa en cualquier operación de creación, actualización o reprogramación por arrastre (Drag & Drop).
 
 ### Regla de Intervalos:
+
 Dos agendas $A$ y $B$ colisionan si y solo si:
 $$\text{inicio}_A < \text{fin}_B \quad \land \quad \text{fin}_A > \text{inicio}_B$$
 
 ### Implementación SQL:
+
 ```sql
 SELECT a.id_agenda, a.titulo, a.fecha_inicio, a.fecha_fin, a.id_responsable,
        u.nombre AS nombre_usuario_en_conflicto,
@@ -170,6 +181,7 @@ WHERE asignaciones.id_usuario IN (?)
 ```
 
 Si la consulta devuelve al menos una coincidencia, el backend detiene la transacción y emite:
+
 - **HTTP 409 Conflict**
 - Código: `CONFLICT`
 - Detalle con el nombre de la persona en conflicto, rol y título de la actividad solapada.
@@ -182,32 +194,34 @@ Si la consulta devuelve al menos una coincidencia, el backend detiene la transac
 El servidor inicializa un servidor WebSocket acoplado a la instancia HTTP de Express (`backend/src/server.js` y `backend/src/services/socketService.js`).
 
 ### Autenticación en Handshake:
+
 ```javascript
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
-  if (!token) return next(new Error('Token de autenticación requerido'));
+  if (!token) return next(new Error("Token de autenticación requerido"));
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     socket.user = decoded;
     next();
   } catch (err) {
-    next(new Error('Token inválido'));
+    next(new Error("Token inválido"));
   }
 });
 ```
 
 ### Eventos Emitidos por el Servidor:
-| Evento Socket | Canal / Sala Destino | Disparador | Payload |
-|---|---|---|---|
-| `agenda:creada` | `staff` + `client_{id_cliente}` | `POST /api/schedules` | Objeto completo de la nueva agenda |
-| `agenda:actualizada`| `staff` + `client_{id_cliente}` | `PUT /api/schedules/:id` | Objeto de la agenda modificado |
-| `agenda:reagendada` | `staff` + `client_{id_cliente}` | `PATCH /api/schedules/:id/reschedule` | Agenda con nuevo rango de horario |
-| `agenda:eliminada` | `staff` + `client_{id_cliente}` | `DELETE /api/schedules/:id` | `{ id_agenda }` |
-| `agenda:nota_creada`| `staff` | `POST /api/schedules/:id/notes` | Objeto de nota operativa |
-| `agenda:nota_actualizada`| `staff` | `PATCH /api/schedules/notes/:id` | Nota con estado `completada` actualizado |
-| `agenda:nota_eliminada`| `staff` | `DELETE /api/schedules/notes/:id` | `{ id_nota }` |
-| `agenda:integrante_agregado`| `staff` | `POST /api/schedules/:id/team` | Lista actualizada de integrantes |
-| `agenda:integrante_removido`| `staff` | `DELETE /api/schedules/:id/team/:userId`| Lista actualizada de integrantes |
+
+| Evento Socket                | Canal / Sala Destino            | Disparador                               | Payload                                  |
+| ---------------------------- | ------------------------------- | ---------------------------------------- | ---------------------------------------- |
+| `agenda:creada`              | `staff` + `client_{id_cliente}` | `POST /api/schedules`                    | Objeto completo de la nueva agenda       |
+| `agenda:actualizada`         | `staff` + `client_{id_cliente}` | `PUT /api/schedules/:id`                 | Objeto de la agenda modificado           |
+| `agenda:reagendada`          | `staff` + `client_{id_cliente}` | `PATCH /api/schedules/:id/reschedule`    | Agenda con nuevo rango de horario        |
+| `agenda:eliminada`           | `staff` + `client_{id_cliente}` | `DELETE /api/schedules/:id`              | `{ id_agenda }`                          |
+| `agenda:nota_creada`         | `staff`                         | `POST /api/schedules/:id/notes`          | Objeto de nota operativa                 |
+| `agenda:nota_actualizada`    | `staff`                         | `PATCH /api/schedules/notes/:id`         | Nota con estado `completada` actualizado |
+| `agenda:nota_eliminada`      | `staff`                         | `DELETE /api/schedules/notes/:id`        | `{ id_nota }`                            |
+| `agenda:integrante_agregado` | `staff`                         | `POST /api/schedules/:id/team`           | Lista actualizada de integrantes         |
+| `agenda:integrante_removido` | `staff`                         | `DELETE /api/schedules/:id/team/:userId` | Lista actualizada de integrantes         |
 
 El frontend escucha reactivamente estos eventos mediante `frontend/src/services/socket.js`, actualizando los contadores de las tarjetas de resumen y las columnas de días sin requerir recargar la página.
 
@@ -362,4 +376,3 @@ Se ejecutó la suite completa con 69 escenarios automatizados en `backend/src/sc
 2. **Seguridad y Confianza Cero:** El principio de privilegios mínimos fue aplicado rigurosamente. Ningún rol puede ejecutar acciones fuera de su competencia, y el backend valida inequívocamente cada operación contra el token JWT emitido.
 3. **Experiencia de Usuario en Tiempo Real:** La interfaz visual respeta los lineamientos corporativos (Negro Obsidian, Dorado y Blanco), ofreciendo una experiencia fluida con sincronización en vivo mediante WebSocket y Drag & Drop intuitivo.
 4. **Veredicto Final:** **APROBADO CON HONORES (100% DE CRITERIOS SATISFECHOS).**
-
