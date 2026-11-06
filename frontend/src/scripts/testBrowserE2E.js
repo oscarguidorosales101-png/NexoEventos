@@ -93,10 +93,15 @@ async function runBrowserE2E() {
     await page.waitForFunction(() => document.body.innerText.includes('Gala de Tecnología E2E'), { timeout: 10000 });
     logPass('Evento "Gala de Tecnología E2E" visible en la tabla');
 
-    // Editar evento
-    const editBtns = await page.$$('button[title="Editar evento"]');
-    if (editBtns.length > 0) {
-      await editBtns[0].click();
+    // Editar evento creado (localizando su fila específica)
+    const editBtn = await page.evaluateHandle(() => {
+      const rows = Array.from(document.querySelectorAll('table tbody tr'));
+      const targetRow = rows.find(r => r.innerText.includes('Gala de Tecnología E2E'));
+      return targetRow ? targetRow.querySelector('button[title="Editar evento"]') : null;
+    });
+
+    if (editBtn && (await editBtn.jsonValue()) !== null) {
+      await editBtn.asElement().click();
       await page.waitForSelector('#modal_evt_ubicacion', { visible: true });
       await page.focus('#modal_evt_ubicacion');
       await page.keyboard.down('Control');
@@ -111,15 +116,21 @@ async function runBrowserE2E() {
       logPass('Edición de evento completada y persistida en interfaz');
     }
 
-    // Eliminar evento creado
-    const deleteBtns = await page.$$('button[title="Eliminar evento"]');
-    if (deleteBtns.length > 0) {
-      await deleteBtns[0].click();
+    // Eliminar evento creado (localizando su fila específica con la ubicación modificada)
+    const deleteBtn = await page.evaluateHandle(() => {
+      const rows = Array.from(document.querySelectorAll('table tbody tr'));
+      const targetRow = rows.find(r => r.innerText.includes('Salón Bellavista Modificado E2E') || r.innerText.includes('Gala de Tecnología E2E'));
+      return targetRow ? targetRow.querySelector('button[title="Eliminar evento"]') : null;
+    });
+
+    if (deleteBtn && (await deleteBtn.jsonValue()) !== null) {
+      await deleteBtn.asElement().click();
       await page.waitForSelector('.modal-footer button.btn-danger', { visible: true });
       const confirmDeleteBtn = await page.$('.modal-footer button.btn-danger');
       if (confirmDeleteBtn) {
         await confirmDeleteBtn.click();
         await page.waitForSelector('.modal-footer button.btn-danger', { hidden: true });
+        await page.waitForFunction(() => !document.body.innerText.includes('Salón Bellavista Modificado E2E'), { timeout: 10000 });
         logPass('Evento de prueba eliminado mediante ConfirmModal');
       }
     }

@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import pool from '../config/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +11,19 @@ const BASE_URL = `http://localhost:${process.env.PORT || 5000}/api`;
 
 let passedTests = 0;
 let failedTests = 0;
+
+let adminToken = null;
+let supervisorToken = null;
+let clientToken = null;
+
+const testCreatedIds = {
+  users: [],
+  clients: [],
+  events: [],
+  details: [],
+  schedules: [],
+  services: []
+};
 
 function assert(condition, message, details = '') {
   if (condition) {
@@ -49,6 +63,8 @@ async function runTests() {
   console.log('[SUITE] SUITE DE PRUEBAS AUTOMATIZADAS - API NEXOEVENTOS');
   console.log(`[TARGET] URL Objetivo: ${BASE_URL}`);
   console.log('======================================================\n');
+
+  try {
 
   // 1. Health check
   console.log('--- 1. Health Check & Estado Inicial ---');
@@ -109,6 +125,10 @@ async function runTests() {
     }
   });
   assert(registerOk.status === 201 && registerOk.data.data.rol === 'cliente', 'Registro exitoso responde 201 Created con rol cliente');
+  const registeredUserId = registerOk.data?.data?.id_usuario;
+  const registeredClientId = registerOk.data?.data?.id_cliente;
+  if (registeredUserId) testCreatedIds.users.push(registeredUserId);
+  if (registeredClientId) testCreatedIds.clients.push(registeredClientId);
 
   const duplicateRegister = await request('/auth/register', {
     method: 'POST',
@@ -138,7 +158,7 @@ async function runTests() {
     }
   });
   assert(loginAdmin.status === 200 && loginAdmin.data.data.token, 'Login Administrador exitoso (200 OK con JWT)');
-  const adminToken = loginAdmin.data?.data?.token;
+  adminToken = loginAdmin.data?.data?.token;
 
   const loginSupervisor = await request('/auth/login', {
     method: 'POST',
@@ -148,7 +168,7 @@ async function runTests() {
     }
   });
   assert(loginSupervisor.status === 200 && loginSupervisor.data.data.token, 'Login Supervisor exitoso (200 OK con JWT)');
-  const supervisorToken = loginSupervisor.data?.data?.token;
+  supervisorToken = loginSupervisor.data?.data?.token;
 
   const loginCliente = await request('/auth/login', {
     method: 'POST',
@@ -158,7 +178,7 @@ async function runTests() {
     }
   });
   assert(loginCliente.status === 200 && loginCliente.data.data.token, 'Login Cliente exitoso (200 OK con JWT)');
-  const clientToken = loginCliente.data?.data?.token;
+  clientToken = loginCliente.data?.data?.token;
   const clienteToken = loginCliente.data?.data?.token;
 
   // 4. Verificación de Perfil (/api/auth/me)
@@ -225,6 +245,7 @@ async function runTests() {
   });
   assert(createClient.status === 201 && createClient.data.data.id_cliente, 'POST /clientes crea cliente (201 Created)');
   const newClientId = createClient.data?.data?.id_cliente;
+  if (newClientId) testCreatedIds.clients.push(newClientId);
 
   const getClient = await request(`/clientes/${newClientId}`, { headers: { Authorization: `Bearer ${adminToken}` } });
   assert(getClient.status === 200 && getClient.data.data.nombre === 'Marcela Beltrán', 'GET /clientes/:id obtiene cliente creado (200 OK)');
@@ -262,6 +283,7 @@ async function runTests() {
   });
   assert(createServicio.status === 201 && createServicio.data.data.id_servicio, 'POST /servicios crea servicio (201 Created)');
   const newServicioId = createServicio.data?.data?.id_servicio;
+  if (newServicioId) testCreatedIds.services.push(newServicioId);
 
   const getServicio = await request(`/servicios/${newServicioId}`, { headers: { Authorization: `Bearer ${adminToken}` } });
   assert(getServicio.status === 200, 'GET /servicios/:id obtiene servicio (200 OK)');
@@ -314,6 +336,7 @@ async function runTests() {
   });
   assert(createEvento.status === 201 && createEvento.data.data.id_evento, 'POST /eventos crea evento con cliente válido (201 Created)');
   const newEventoId = createEvento.data?.data?.id_evento;
+  if (newEventoId) testCreatedIds.events.push(newEventoId);
 
   const getEvento = await request(`/eventos/${newEventoId}`, { headers: { Authorization: `Bearer ${adminToken}` } });
   assert(getEvento.status === 200 && getEvento.data.data.nombre_cliente, 'GET /eventos/:id retorna evento con datos de cliente relacionado');
@@ -350,6 +373,7 @@ async function runTests() {
   });
   assert(createDetalle.status === 201 && Number(createDetalle.data.data.precio_unitario) === 1100, 'POST /detalle-eventos guarda precio unitario pactado');
   const newDetalleId = createDetalle.data?.data?.id_detalle;
+  if (newDetalleId) testCreatedIds.details.push(newDetalleId);
 
   const getDetalle = await request(`/detalle-eventos/${newDetalleId}`, { headers: { Authorization: `Bearer ${adminToken}` } });
   assert(getDetalle.status === 200 && Number(getDetalle.data.data.subtotal) === 2200, 'GET /detalle-eventos/:id calcula subtotal correctamente (2200)');
@@ -393,6 +417,7 @@ async function runTests() {
   });
   assert(createUser.status === 201 && createUser.data.data.id_usuario, 'POST /usuarios crea usuario administrativamente (201 Created)');
   const newUserId = createUser.data?.data?.id_usuario;
+  if (newUserId) testCreatedIds.users.push(newUserId);
 
   const getUser = await request(`/usuarios/${newUserId}`, { headers: { Authorization: `Bearer ${adminToken}` } });
   assert(getUser.status === 200 && !getUser.data.data.password, 'GET /usuarios/:id retorna usuario sin exponer password ni hash');
@@ -524,6 +549,7 @@ async function runTests() {
     'POST /schedules programa nueva actividad de agenda (201 Created)'
   );
   const newScheduleId = createSchedule.data?.data?.id_agenda;
+  if (newScheduleId) testCreatedIds.schedules.push(newScheduleId);
 
   // Prueba de Detección de Conflicto de Intervalo (409 Conflict)
   const createConflictingSchedule = await request('/schedules', {
@@ -671,6 +697,7 @@ async function runTests() {
     }
   });
   const pendingEventId = eventPendingRes.data.data.id_evento;
+  if (pendingEventId) testCreatedIds.events.push(pendingEventId);
 
   // 14.2 Bloqueo de agenda sobre evento pendiente
   const scheduleOnPending = await request('/schedules', {
@@ -731,6 +758,7 @@ async function runTests() {
     }
   });
   const mainScheduleId = mainScheduleRes.data.data?.id_agenda;
+  if (mainScheduleId) testCreatedIds.schedules.push(mainScheduleId);
   assert(mainScheduleRes.status === 201 && mainScheduleId, 'POST /schedules crea agenda principal para evento confirmado (201 Created)');
 
   // 14.5 Bloqueo estricto de duplicación de Agenda Principal (HTTP 409 Conflict)
@@ -767,6 +795,7 @@ async function runTests() {
     }
   });
   const secondaryActivityId = secondaryActivityRes.data.data?.id_agenda;
+  if (secondaryActivityId) testCreatedIds.schedules.push(secondaryActivityId);
   assert(secondaryActivityRes.status === 201 && secondaryActivityId, 'POST /schedules permite múltiples actividades operativas (Meeting) para el mismo evento (201 Created)');
 
   // 14.7 Simulación de concurrencia: solicitudes simultáneas para programar agenda principal
@@ -783,6 +812,7 @@ async function runTests() {
     }
   });
   const concEventId = eventConcurrent.data.data?.id_evento;
+  if (concEventId) testCreatedIds.events.push(concEventId);
 
   // Lanzar dos peticiones en paralelo para la misma agenda principal
   const [conc1, conc2] = await Promise.all([
@@ -817,10 +847,12 @@ async function runTests() {
   const hasOneSuccess = (conc1.status === 201 && conc2.status === 409) || (conc2.status === 201 && conc1.status === 409);
   assert(hasOneSuccess, 'Condición de carrera resuelta: de dos solicitudes simultáneas, una es 201 y la otra 409 Conflict');
 
+  const createdConcScheduleId = conc1.status === 201 ? conc1.data.data?.id_agenda : conc2.data.data?.id_agenda;
+  if (createdConcScheduleId) testCreatedIds.schedules.push(createdConcScheduleId);
+
   // Limpieza de agendas y eventos de prueba de la sección 14
   if (mainScheduleId) await request(`/schedules/${mainScheduleId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
   if (secondaryActivityId) await request(`/schedules/${secondaryActivityId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
-  const createdConcScheduleId = conc1.status === 201 ? conc1.data.data?.id_agenda : conc2.data.data?.id_agenda;
   if (createdConcScheduleId) await request(`/schedules/${createdConcScheduleId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
   if (pendingEventId) await request(`/eventos/${pendingEventId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
   if (concEventId) await request(`/eventos/${concEventId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
@@ -840,10 +872,11 @@ async function runTests() {
   assert(supRolesBlocked.status === 403 && supRolesBlocked.data.error?.code === 'FORBIDDEN', 'Supervisor bloqueado con 403 FORBIDDEN en /roles');
 
   // 15.3 Aislamiento de eventos entre clientes
-  const clientViewOtherEvent = await request('/eventos/1', { headers: { Authorization: `Bearer ${clientToken}` } });
+  // Cliente 1 (id_cliente = 1) intenta acceder a Evento 2 (propiedad de Cliente 2: 'Boda Real Carolina y Fernando')
+  const clientViewOtherEvent = await request('/eventos/2', { headers: { Authorization: `Bearer ${clientToken}` } });
   assert(
-    clientViewOtherEvent.status === 403 || (clientViewOtherEvent.status === 200 && clientViewOtherEvent.data.data?.id_cliente === 1),
-    'Cliente restringido de acceder a información de eventos ajenos'
+    clientViewOtherEvent.status === 403 && clientViewOtherEvent.data?.error?.code === 'FORBIDDEN',
+    'Cliente restringido de acceder a información de eventos ajenos (GET /eventos/2 responde 403 FORBIDDEN)'
   );
 
   // 15.4 Aislamiento de datos de otros clientes
@@ -870,6 +903,102 @@ async function runTests() {
     socketHandshakeRes.status === 200 && socketHandshakeText.includes('sid'),
     'Servidor Socket.IO responde exitosamente al handshake en tiempo real (sid activo)'
   );
+
+  } catch (uncaughtErr) {
+    console.error('\n[ERROR NO CONTROLADO EN PRUEBAS]', uncaughtErr);
+    failedTests++;
+  } finally {
+    console.log('\n--- 16. Limpieza Automática y Segura de Registros Creados (finally) ---');
+    try {
+      // 1. Eliminar agendas creadas por esta ejecución
+      for (const idAg of testCreatedIds.schedules) {
+        try {
+          if (adminToken) await request(`/schedules/${idAg}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+        } catch (_) {}
+      }
+
+      // 2. Eliminar detalles de eventos creados por esta ejecución
+      for (const idDet of testCreatedIds.details) {
+        try {
+          if (adminToken) await request(`/detalle-eventos/${idDet}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+        } catch (_) {}
+      }
+
+      // 3. Eliminar eventos creados por esta ejecución
+      for (const idEv of testCreatedIds.events) {
+        try {
+          if (adminToken) await request(`/eventos/${idEv}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+        } catch (_) {}
+      }
+
+      // 4. Eliminar servicios creados por esta ejecución
+      for (const idServ of testCreatedIds.services) {
+        try {
+          if (adminToken) await request(`/servicios/${idServ}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+        } catch (_) {}
+      }
+
+      // 5. Eliminar usuarios creados por esta ejecución (incluye el cliente registrado en Sec. 3)
+      for (const idUsr of testCreatedIds.users) {
+        try {
+          if (adminToken) await request(`/usuarios/${idUsr}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+        } catch (_) {}
+      }
+
+      // 6. Eliminar clientes creados por esta ejecución (incluye el perfil cliente registrado en Sec. 3)
+      for (const idCli of testCreatedIds.clients) {
+        try {
+          if (adminToken) await request(`/clientes/${idCli}`, { method: 'DELETE', headers: { Authorization: `Bearer ${adminToken}` } });
+        } catch (_) {}
+      }
+
+      // 7. Respaldo directo en MySQL: si quedó algún registro por fallo de HTTP antes de tokens
+      if (testCreatedIds.schedules.length > 0) {
+        await pool.query('DELETE FROM agendas WHERE id_agenda IN (?)', [testCreatedIds.schedules]);
+      }
+      if (testCreatedIds.details.length > 0) {
+        await pool.query('DELETE FROM detalle_eventos WHERE id_detalle IN (?)', [testCreatedIds.details]);
+      }
+      if (testCreatedIds.events.length > 0) {
+        await pool.query('DELETE FROM eventos WHERE id_evento IN (?)', [testCreatedIds.events]);
+      }
+      if (testCreatedIds.services.length > 0) {
+        await pool.query('DELETE FROM servicios WHERE id_servicio IN (?)', [testCreatedIds.services]);
+      }
+      if (testCreatedIds.users.length > 0) {
+        await pool.query('DELETE FROM usuarios WHERE id_usuario IN (?)', [testCreatedIds.users]);
+      }
+      if (testCreatedIds.clients.length > 0) {
+        await pool.query('DELETE FROM clientes WHERE id_cliente IN (?)', [testCreatedIds.clients]);
+      }
+
+      // 8. Verificación directa en MySQL de que NO quede ningún registro creado por esta ejecución
+      const [residualUsers] = testCreatedIds.users.length > 0
+        ? await pool.query('SELECT id_usuario FROM usuarios WHERE id_usuario IN (?)', [testCreatedIds.users])
+        : [[]];
+      const [residualClients] = testCreatedIds.clients.length > 0
+        ? await pool.query('SELECT id_cliente FROM clientes WHERE id_cliente IN (?)', [testCreatedIds.clients])
+        : [[]];
+      const [residualEvents] = testCreatedIds.events.length > 0
+        ? await pool.query('SELECT id_evento FROM eventos WHERE id_evento IN (?)', [testCreatedIds.events])
+        : [[]];
+      const [residualSchedules] = testCreatedIds.schedules.length > 0
+        ? await pool.query('SELECT id_agenda FROM agendas WHERE id_agenda IN (?)', [testCreatedIds.schedules])
+        : [[]];
+      const [residualServices] = testCreatedIds.services.length > 0
+        ? await pool.query('SELECT id_servicio FROM servicios WHERE id_servicio IN (?)', [testCreatedIds.services])
+        : [[]];
+
+      const totalResiduales = residualUsers.length + residualClients.length + residualEvents.length + residualSchedules.length + residualServices.length;
+      assert(totalResiduales === 0, 'Verificación directa en MySQL: 0 registros residuales creados por esta suite');
+
+    } catch (cleanupErr) {
+      console.error('Error durante la verificación de limpieza:', cleanupErr);
+      failedTests++;
+    } finally {
+      await pool.end();
+    }
+  }
 
   console.log('\n======================================================');
   console.log(`[RESUMEN] RESULTADO DE LA SUITE DE PRUEBAS:`);

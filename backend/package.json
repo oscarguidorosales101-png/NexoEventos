@@ -12,7 +12,8 @@
     "seed": "node src/scripts/seed.js",
     "test:api": "node src/scripts/testEndpoints.js",
     "test:persistence": "node src/scripts/testDirectMySQLPersistence.js",
-    "test:commercial": "node src/scripts/testCommercialWorkflow.js"
+    "test:commercial": "node src/scripts/testCommercialWorkflow.js",
+    "test:socket": "node src/scripts/testSocket.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -22,5 +23,8 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.12.0",
     "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
   }
 }
